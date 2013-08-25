@@ -2,5 +2,7 @@
 
 .*.swp
 
+/db
+
 Session.vim
 tags
