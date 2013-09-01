@@ -11,4 +11,5 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     url(r'^api/v1/events/read/$', timesheet.views.events_read),
+    url(r'^api/v1/events/delete/$', timesheet.views.events_delete),
 )

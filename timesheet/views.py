@@ -34,5 +34,25 @@ def events_read(request):
         output.append(e)
     return HttpResponse(json.dumps(output), content_type = "application/json")
 
+def events_delete(request):
+    if not request.user.is_authenticated():
+        raise PermissionDenied
+    params = None
+    if request.method == 'POST':
+        params = request.POST
+    elif request.method == 'GET':
+        params = request.GET
+    if params == None or params.get('id') == None:
+        raise PermissionDenied
+    id = int(params['id'])
+    evs = Event.objects.filter(id = id, user = request.user)
+    output = []
+    for ev in evs:
+        e = {}
+        e['id'] = ev.id
+        ev.delete()
+        output.append(e)
+    return HttpResponse(json.dumps(output), content_type = "application/json")
+
 # vim:set et:
 # vi:set sw=4 ts=4:
