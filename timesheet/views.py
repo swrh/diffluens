@@ -4,13 +4,13 @@ from datetime import datetime
 
 from django.http import HttpResponse
 from django.utils.timezone import utc
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 from timesheet.models import Event
 
-@login_required
 def events_read(request):
+    if not request.user.is_authenticated():
+        raise PermissionDenied
     params = None
     if request.method == 'POST':
         params = request.POST
@@ -20,7 +20,7 @@ def events_read(request):
         raise PermissionDenied
     begin = datetime.fromtimestamp(int(params['start']), utc)
     end = datetime.fromtimestamp(int(params['end']), utc)
-    evs = Event.objects.filter(begin__gte = begin, begin__lte = end)
+    evs = Event.objects.filter(user = request.user, begin__gte = begin, begin__lte = end)
     output = []
     for ev in evs:
         e = {}
