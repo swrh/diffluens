@@ -16,19 +16,19 @@ def events_read(request):
         params = request.POST
     elif request.method == 'GET':
         params = request.GET
-    if params == None or params.get('start') == None or params.get('end') == None:
+    if params == None or params.get('begin') == None or params.get('end') == None:
         raise PermissionDenied
-    begin = datetime.fromtimestamp(int(params['start']))
+    begin = datetime.fromtimestamp(int(params['begin']))
     end = datetime.fromtimestamp(int(params['end']))
     evs = Event.objects.filter(user = request.user, begin__gte = begin, begin__lte = end)
     output = []
     for ev in evs:
         e = {}
-        e['title'] = unicode(ev.issue)
-        e['start'] = int(time.mktime(ev.begin.timetuple()))
+        e['issue'] = ev.issue
+        e['begin'] = int(time.mktime(ev.begin.timetuple()))
         if ev.end != None:
             e['end'] = int(time.mktime(ev.end.timetuple()))
-        e['allDay'] = ev.all_day
+        e['all_day'] = ev.all_day
         e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type = "application/json")
