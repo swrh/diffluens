@@ -5,6 +5,7 @@ from datetime import datetime
 
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 
 from timesheet.models import Event
 
@@ -20,7 +21,7 @@ def events_read(request):
         raise PermissionDenied
     begin = datetime.fromtimestamp(int(params['begin']))
     end = datetime.fromtimestamp(int(params['end']))
-    evs = Event.objects.filter(user = request.user, begin__gte = begin, begin__lte = end)
+    evs = Event.objects.filter(Q(begin__gte = begin, begin__lte = end) | Q(end__gte = begin, end__lte = end) | Q(begin__lte = begin, end__gte = end), user = request.user)
     output = []
     for ev in evs:
         e = {}
