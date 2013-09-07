@@ -4,10 +4,16 @@ import time
 from datetime import datetime
 
 from django.http import HttpResponse
+from django.shortcuts import render_to_response
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 
 from timesheet.models import Event
+
+def home(request):
+    if not request.user.is_authenticated():
+        raise PermissionDenied
+    return render_to_response('timesheet/index.html', dict(user = request.user))
 
 def events_read(request):
     if not request.user.is_authenticated():

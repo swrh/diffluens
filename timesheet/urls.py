@@ -3,6 +3,7 @@ from django.conf.urls import patterns, url
 from timesheet import views
 
 urlpatterns = patterns('',
+    url(r'^$', views.home, name = 'home'),
     url(r'^events/read/$', views.events_read),
     url(r'^events/delete/$', views.events_delete),
 )

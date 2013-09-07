@@ -1,0 +1,23 @@
+{% load staticfiles %}
+<?xml version="1.0" encoding="UTF-8"?>
+<!doctype html>
+<html>
+  <head>
+    <title>{% block title %}Timesheet{% endblock %}</title>
+
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+    <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/1.6.4/fullcalendar.css" />
+    <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/1.6.4/fullcalendar.print.css" media="print" />
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/1.6.4/fullcalendar.min.js"></script>
+    <script type="text/javascript" src="{% static "timesheet/js/timesheet.js" %}"></script>
+  </head>
+  <body>
+    <div id="calendar"></div>
+  </body>
+</html>
+
+<!-- vim:set ft=htmldjango et: -->
+<!-- vi:set sw=2 ts=2: -->
