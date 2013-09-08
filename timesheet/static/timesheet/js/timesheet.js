@@ -47,9 +47,7 @@ $(document).ready(function() {
     events: function(start, end, callback) {
       $.ajax({
         url: '/timesheet/events/read/',
-        type: 'GET',
-        contentType: 'application/json',
-        dataType: 'json',
+        type: 'POST',
         data: {
           begin: Math.round(start.getTime() / 1000),
           end: Math.round(end.getTime() / 1000),

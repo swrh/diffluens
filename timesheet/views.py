@@ -18,11 +18,7 @@ def home(request):
 def events_read(request):
     if not request.user.is_authenticated():
         raise PermissionDenied
-    params = None
-    if request.method == 'POST':
-        params = request.POST
-    elif request.method == 'GET':
-        params = request.GET
+    params = request.POST
     if params == None or params.get('begin') == None or params.get('end') == None:
         raise PermissionDenied
     begin = datetime.fromtimestamp(int(params['begin']))
@@ -43,11 +39,7 @@ def events_read(request):
 def events_delete(request):
     if not request.user.is_authenticated():
         raise PermissionDenied
-    params = None
-    if request.method == 'POST':
-        params = request.POST
-    elif request.method == 'GET':
-        params = request.GET
+    params = request.POST
     if params == None or params.get('id') == None:
         raise PermissionDenied
     id = int(params['id'])
