@@ -51,6 +51,12 @@ $(document).ready(function() {
     },
     theme: true,
     editable: true,
+    axisFormat: 'HH:mm',
+    timeFormat: {
+      agenda: 'HH:mm{ - HH:mm}',
+      '': 'HH:mm{ - HH:mm}',
+    },
+    slotMinutes: 15,
     events: function(start, end, callback) {
       $.ajax({
         url: '/timesheet/events/read/',
