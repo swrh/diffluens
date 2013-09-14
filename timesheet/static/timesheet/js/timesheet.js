@@ -33,6 +33,13 @@
 })();
 
 $(document).ready(function() {
+  $('#dialog-alert').dialog({
+    modal: true,
+    dialogClass: 'no-close',
+    autoOpen: false,
+  });
+  $('#dialog-alert').html('<p style="text-align: center;"></p>');
+
   /*
    * Initialize FullCalendar.
    */
@@ -65,7 +72,9 @@ $(document).ready(function() {
           callback(data);
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
-          alert('Failure while fetching events!');
+          $('#dialog-alert').dialog('option', 'title', 'Error');
+          $('#dialog-alert p').text('Failure while fetching events!');
+          $('#dialog-alert').dialog('open');
         },
       });
     },
