@@ -42,6 +42,7 @@ $(document).ready(function() {
       center: 'title',
       right: 'month,agendaWeek,agendaDay',
     },
+    theme: true,
     editable: true,
     events: function(start, end, callback) {
       $.ajax({
