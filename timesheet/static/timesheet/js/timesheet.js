@@ -1,4 +1,23 @@
 /*
+ * Date formatting stuff.
+ */
+(function() {
+  var numberToString = function(num, len) {
+    var str = '0000' + num;
+    return str.substr(str.length - len);
+  }
+
+  Date.prototype.toISO = function() {
+    return numberToString(this.getFullYear(), 4) + '-' +
+      numberToString(this.getMonth() + 1, 2) + '-' +
+      numberToString(this.getDate(), 2) + 'T' +
+      numberToString(this.getHours(), 2) + ':' +
+      numberToString(this.getMinutes(), 2) + ':' +
+      numberToString(this.getSeconds(), 2);
+  }
+})();
+
+/*
  * CSRF stuff.
  */
 (function() {
@@ -62,8 +81,8 @@ $(document).ready(function() {
         url: '/timesheet/events/read/',
         type: 'POST',
         data: {
-          begin: Math.round(start.getTime() / 1000),
-          end: Math.round(end.getTime() / 1000),
+          begin: start.toISO(),
+          end: end.toISO(),
         },
         success: function(data) {
           for (var i in data) {

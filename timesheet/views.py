@@ -1,7 +1,6 @@
 import json
-import time
 
-from datetime import datetime
+import dateutil.parser
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -20,16 +19,16 @@ def events_read(request):
     params = request.POST
     if params == None or params.get('begin') == None or params.get('end') == None:
         raise PermissionDenied
-    begin = datetime.fromtimestamp(int(params['begin']))
-    end = datetime.fromtimestamp(int(params['end']))
+    begin = dateutil.parser.parse(params['begin']).replace(tzinfo = None)
+    end = dateutil.parser.parse(params['end']).replace(tzinfo = None)
     evs = Event.objects.filter(Q(begin__gte = begin, begin__lte = end) | Q(end__gte = begin, end__lte = end) | Q(begin__lte = begin, end__gte = end), user = request.user)
     output = []
     for ev in evs:
         e = {}
         e['issue'] = ev.issue
-        e['begin'] = int(time.mktime(ev.begin.timetuple()))
+        e['begin'] = ev.begin.isoformat()
         if ev.end != None:
-            e['end'] = int(time.mktime(ev.end.timetuple()))
+            e['end'] = ev.end.isoformat()
         e['all_day'] = ev.all_day
         e['id'] = ev.id
         output.append(e)
