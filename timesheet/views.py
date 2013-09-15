@@ -1,4 +1,5 @@
 import json
+import csv
 
 import dateutil.parser
 
@@ -48,6 +49,22 @@ def events_delete(request):
         ev.delete()
         output.append(e)
     return HttpResponse(json.dumps(output), content_type = "application/json")
+
+@login_required
+def report(request):
+    response = HttpResponse(content_type = 'text/plain')
+    writer = csv.writer(response)
+    for ev in Event.objects.all():
+        writer.writerow([
+            ev.begin.strftime('%Y%m%d'),
+            ev.begin.strftime('%H:%M:%S'),
+            ev.end.strftime('%H:%M:%S'),
+            '',
+            request.user.usersettings.protheus_resource,
+            '',
+            '#%d' % (ev.issue),
+            ])
+    return response
 
 # vim:set et:
 # vi:set sw=4 ts=4:
