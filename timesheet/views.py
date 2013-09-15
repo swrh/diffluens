@@ -3,6 +3,7 @@ import time
 
 from datetime import datetime
 
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.core.exceptions import PermissionDenied
@@ -10,14 +11,12 @@ from django.db.models import Q
 
 from timesheet.models import Event
 
+@login_required
 def home(request):
-    if not request.user.is_authenticated():
-        raise PermissionDenied
     return render_to_response('timesheet/index.html', dict(user = request.user))
 
+@login_required
 def events_read(request):
-    if not request.user.is_authenticated():
-        raise PermissionDenied
     params = request.POST
     if params == None or params.get('begin') == None or params.get('end') == None:
         raise PermissionDenied
@@ -36,9 +35,8 @@ def events_read(request):
         output.append(e)
     return HttpResponse(json.dumps(output), content_type = "application/json")
 
+@login_required
 def events_delete(request):
-    if not request.user.is_authenticated():
-        raise PermissionDenied
     params = request.POST
     if params == None or params.get('id') == None:
         raise PermissionDenied
