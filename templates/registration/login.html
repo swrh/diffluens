@@ -1,26 +1,45 @@
 {% extends "base.html" %}
 
+{% load staticfiles %}
+{% load bootstrap_toolkit %}
+
 {% block content %}
 
-{% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "css/signin.css" %}" />
 
-<form method="post" action="{% url 'django.contrib.auth.views.login' %}">
-{% csrf_token %}
-<table>
-<tr>
-    <td>{{ form.username.label_tag }}</td>
-    <td>{{ form.username }}</td>
-</tr>
-<tr>
-    <td>{{ form.password.label_tag }}</td>
-    <td>{{ form.password }}</td>
-</tr>
-</table>
+  <div class="container">
+    <form action="{% url 'django.contrib.auth.views.login' %}" method="post" class="form-signin">
+      <h2 class="form-signin-heading">Please sign in</h2>
+      {% csrf_token %}
+      {% bootstrap_form form layout="vertical" inline_label="true" %}
+      <button class="btn btn-large btn-primary btn-block" type="submit">Sign in</button>
+      <input type="hidden" name="next" value="{{ next }}" />
+    </form>
+  </div>
 
-<input type="submit" value="login" />
-<input type="hidden" name="next" value="{{ next }}" />
-</form>
+  <script type="text/javascript">
+     (function() {
+      //
+      // Cosmetic stuff.
+      //
+
+      $('#id_username').attr({
+        placeholder: '{{ form.username.label }}',
+        class: 'input-block-level',
+        autofocus: 'autofocus',
+        });
+      $('label[for="id_username"]').remove();
+      $('#id_username').focus();
+
+      $('#id_password').attr({
+        placeholder: '{{ form.password.label }}',
+        class: 'input-block-level',
+        });
+      $('label[for="id_password"]').remove();
+     })();
+  </script>
 
 {% endblock %}
+
+<!-- vim:set ft=htmldjango et: -->
+<!-- vi:set sw=2 ts=2: -->
