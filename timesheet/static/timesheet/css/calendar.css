@@ -1,0 +1,21 @@
+.label-block {
+  display: block;
+}
+
+.input-block {
+  width: 100%;
+}
+
+.issue-time {
+  display: block;
+}
+
+.issue-time-begin,
+.issue-time-end {
+  display: inline-block;
+  width: 48%;
+}
+
+.issue-time-end {
+  float: right;
+}
