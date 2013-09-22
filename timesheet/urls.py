@@ -4,6 +4,7 @@ from timesheet import views
 
 urlpatterns = patterns('',
     url(r'^$', views.home, name = 'home'),
+    url(r'^events/create/$', views.events_create),
     url(r'^events/read/$', views.events_read),
     url(r'^events/delete/$', views.events_delete),
     url(r'^report/$', views.report),
