@@ -65,10 +65,14 @@ def events_create(request):
 @login_required
 def events_read(request):
     params = request.POST
-    if params == None or params.get('begin') == None or params.get('end') == None:
+    if params == None:
         raise PermissionDenied
-    begin = dateutil.parser.parse(params['begin']).replace(tzinfo = None)
-    end = dateutil.parser.parse(params['end']).replace(tzinfo = None)
+    begin = params.get('begin')
+    end = params.get('end')
+    if begin == None or end == None:
+        raise PermissionDenied
+    begin = dateutil.parser.parse(begin).replace(tzinfo = None)
+    end = dateutil.parser.parse(end).replace(tzinfo = None)
     evs = Event.objects.filter(Q(begin__gte = begin, begin__lte = end) | Q(end__gte = begin, end__lte = end) | Q(begin__lte = begin, end__gte = end), user = request.user)
     output = []
     for ev in evs:
@@ -85,9 +89,12 @@ def events_read(request):
 @login_required
 def events_delete(request):
     params = request.POST
-    if params == None or params.get('id') == None:
+    if params == None:
         raise PermissionDenied
-    id = int(params['id'])
+    id = params.get('id')
+    if id == None:
+        raise PermissionDenied
+    id = int(id)
     evs = Event.objects.filter(id = id, user = request.user)
     output = []
     for ev in evs:
