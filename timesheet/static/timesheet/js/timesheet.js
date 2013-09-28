@@ -205,6 +205,9 @@
         'OK': function() {
           this_.save();
         },
+        'Delete': function() {
+          this_.delete();
+        },
         'Cancel': function() {
           this_.cancel();
         },
@@ -214,6 +217,17 @@
 
   DialogIssue.prototype.open = function(options) {
     this.onClickOk = options.onClickOk;
+    if (this.onClickOk == null) {
+      this.element.parent().find(':button:contains("OK")').prop('disabled', true).addClass('ui-state-disabled');
+    } else {
+      this.element.parent().find(':button:contains("OK")').prop('disabled', false).removeClass('ui-state-disabled');
+    }
+    this.onClickDelete = options.onClickDelete;
+    if (this.onClickDelete == null) {
+      this.element.parent().find(':button:contains("Delete")').prop('disabled', true).addClass('ui-state-disabled');
+    } else {
+      this.element.parent().find(':button:contains("Delete")').prop('disabled', false).removeClass('ui-state-disabled');
+    }
 
     this.event = options.event;
 
@@ -255,6 +269,14 @@
     }
   }
 
+  DialogIssue.prototype.delete = function() {
+    if (this.onClickDelete != null) {
+      this.onClickDelete(this.event);
+    } else {
+      this.close();
+    }
+  }
+
   DialogIssue.prototype.cancel = function() {
     this.close();
   }
@@ -268,17 +290,14 @@
  * Diffluens + FullCalendar integration stuff.
  */
 (function() {
-  jsonD2F = function(data) {
-    for (var i = 0; i < data.length; i++) {
-      var d = data[i];
-      var e = {};
-      e.allDay = d.all_day;
-      e.start = new Date(d.begin).offsetTZ();
-      e.end = new Date(d.end).offsetTZ();
-      e.title = '' + d.issue;
-      data[i] = e;
-    }
-    return data;
+  jsonD2F = function(d) {
+    var f = {};
+    f.id = d.id;
+    f.allDay = d.all_day;
+    f.start = new Date(d.begin).offsetTZ();
+    f.end = new Date(d.end).offsetTZ();
+    f.title = '' + d.issue;
+    return f;
   }
 })();
 
@@ -321,7 +340,9 @@ $(document).ready(function() {
           end: end.toISO(),
         },
         success: function(data) {
-          jsonD2F(data);
+          for (var i = 0; i < data.length; i++) {
+            data[i] = jsonD2F(data[i]);
+          }
           callback(data);
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
@@ -375,15 +396,50 @@ $(document).ready(function() {
             },
             success: function (data) {
               $('#dialog-issue').dialogIssue('close');
-              jsonD2F(data);
               for (var i = 0; i < data.length; i++) {
-                $('#calendar').fullCalendar('renderEvent', data[i]);
+                $('#calendar').fullCalendar('renderEvent', jsonD2F(data[i]));
               }
               $('#dialog-alert').dialog('close');
             },
             error: function (XMLHttpRequest, textStatus, errorThrown) {
               $('#dialog-alert').dialog('option', 'title', 'Error');
               $('#dialog-alert p').text('Failure while creating event!');
+            },
+          });
+        },
+      });
+    },
+    eventClick: function(event, jsEvent, view) {
+      $('#dialog-issue').dialogIssue('open', {
+        event: {
+          id: event.id,
+          issue: parseInt(event.title),
+          begin: event.start,
+          end: event.end,
+          all_day: event.allDay,
+        },
+        onClickDelete: function(event) {
+          $('#dialog-alert').dialog('option', 'title', 'Info');
+          $('#dialog-alert p').text('Please wait...');
+          $('#dialog-alert').dialog('open');
+
+          $.ajax({
+            async: false,
+            url: '/timesheet/events/delete/',
+            type: 'POST',
+            data: {
+              id: event.id,
+            },
+            success: function (data) {
+              $('#dialog-issue').dialogIssue('close');
+              for (var i = 0; i < data.length; i++) {
+                $('#calendar').fullCalendar('removeEvents', data[i].id);
+              }
+              $('#dialog-alert').dialog('close');
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+              $('#dialog-alert').dialog('option', 'title', 'Error');
+              $('#dialog-alert p').text('Failure while deleting event!');
             },
           });
         },
