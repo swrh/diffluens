@@ -287,6 +287,82 @@
 })(jQuery);
 
 /*
+ * dialogAlert plugin.
+ */
+(function($) {
+  var defaults = {
+  };
+
+  $.fn.dialogAlert = function(options) {
+    if (typeof(options) == 'string') {
+      var args = Array.prototype.slice.call(arguments, 1);
+      var res;
+      this.each(function() {
+        var de = $.data(this, 'dialogAlert');
+        if (de && $.isFunction(de[options])) {
+          var r = de[options].apply(de, args);
+          if (res === undefined) {
+            res = r;
+          }
+          if (options == 'destroy') {
+            $.removeData(this, 'dialogAlert');
+          }
+        }
+      });
+      if (res !== undefined) {
+        return res;
+      }
+      return this;
+    }
+
+    options = options || {};
+
+    options = $.extend(defaults, options);
+
+    this.each(function(i, _element) {
+      var element = $(_element);
+      var de = new DialogAlert(element, options);
+      element.data('dialogAlert', de);
+    });
+
+    return this;
+  }
+
+  var DialogAlert = function(element, options) {
+    var this_ = this;
+
+    this.element = element;
+    this.options = options;
+
+    element.html('<p style="text-align: center;"></p>');
+    element.dialog({
+      modal: true,
+      autoOpen: false,
+    });
+  }
+
+  DialogAlert.prototype.status = function(message) {
+    this.element.parent().find('.ui-dialog-titlebar :button').hide()
+    this.element.dialog('option', 'closeOnEscape', false);
+    this.element.dialog('option', 'title', 'Status');
+    this.element.find('p').text(message);
+    this.element.dialog('open');
+  }
+
+  DialogAlert.prototype.error = function(message) {
+    this.element.parent().find('.ui-dialog-titlebar :button').show()
+    this.element.dialog('option', 'closeOnEscape', true);
+    this.element.dialog('option', 'title', 'Error');
+    this.element.find('p').text(message);
+    this.element.dialog('open');
+  }
+
+  DialogAlert.prototype.close = function() {
+    this.element.dialog('close');
+  }
+})(jQuery);
+
+/*
  * Diffluens + FullCalendar integration stuff.
  */
 (function() {
@@ -318,13 +394,7 @@
  * Initialization stuff.
  */
 $(document).ready(function() {
-  $('#dialog-alert').dialog({
-    modal: true,
-    dialogClass: 'no-close',
-    autoOpen: false,
-  });
-  $('#dialog-alert').html('<p style="text-align: center;"></p>');
-
+  $('#dialog-alert').dialogAlert();
   $('#dialog-issue').dialogIssue();
 
   /*
@@ -359,9 +429,7 @@ $(document).ready(function() {
           callback(data);
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
-          $('#dialog-alert').dialog('option', 'title', 'Error');
-          $('#dialog-alert p').text('Failure while fetching events!');
-          $('#dialog-alert').dialog('open');
+          $('#dialog-alert').dialogAlert('error', 'Failure while fetching events!');
         },
       });
     },
@@ -393,9 +461,7 @@ $(document).ready(function() {
           all_day: allDay,
         },
         onClickOk: function(event) {
-          $('#dialog-alert').dialog('option', 'title', 'Info');
-          $('#dialog-alert p').text('Please wait...');
-          $('#dialog-alert').dialog('open');
+          $('#dialog-alert').dialogAlert('status', 'Please wait...');
 
           $.ajax({
             async: false,
@@ -412,11 +478,10 @@ $(document).ready(function() {
               for (var i = 0; i < data.length; i++) {
                 $('#calendar').fullCalendar('renderEvent', jsonD2F(data[i]));
               }
-              $('#dialog-alert').dialog('close');
+              $('#dialog-alert').dialogAlert('close');
             },
             error: function (XMLHttpRequest, textStatus, errorThrown) {
-              $('#dialog-alert').dialog('option', 'title', 'Error');
-              $('#dialog-alert p').text('Failure while creating event!');
+              $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
             },
           });
         },
@@ -433,9 +498,7 @@ $(document).ready(function() {
           all_day: event.allDay,
         },
         onClickOk: function(event) {
-          $('#dialog-alert').dialog('option', 'title', 'Info');
-          $('#dialog-alert p').text('Please wait...');
-          $('#dialog-alert').dialog('open');
+          $('#dialog-alert').dialogAlert('status', 'Please wait...');
 
           $.ajax({
             async: false,
@@ -464,18 +527,15 @@ $(document).ready(function() {
                 jsonD2F(data[0], fc_event);
                 $('#calendar').fullCalendar('updateEvent', fc_event);
               }
-              $('#dialog-alert').dialog('close');
+              $('#dialog-alert').dialogAlert('close');
             },
             error: function (XMLHttpRequest, textStatus, errorThrown) {
-              $('#dialog-alert').dialog('option', 'title', 'Error');
-              $('#dialog-alert p').text('Failure while updating event!');
+              $('#dialog-alert').dialogAlert('error', 'Failure while updating event!');
             },
           });
         },
         onClickDelete: function(event) {
-          $('#dialog-alert').dialog('option', 'title', 'Info');
-          $('#dialog-alert p').text('Please wait...');
-          $('#dialog-alert').dialog('open');
+          $('#dialog-alert').dialogAlert('status', 'Please wait...');
 
           $.ajax({
             async: false,
@@ -489,11 +549,10 @@ $(document).ready(function() {
               for (var i = 0; i < data.length; i++) {
                 $('#calendar').fullCalendar('removeEvents', data[i].id);
               }
-              $('#dialog-alert').dialog('close');
+              $('#dialog-alert').dialogAlert('close');
             },
             error: function (XMLHttpRequest, textStatus, errorThrown) {
-              $('#dialog-alert').dialog('option', 'title', 'Error');
-              $('#dialog-alert p').text('Failure while deleting event!');
+              $('#dialog-alert').dialogAlert('error', 'Failure while deleting event!');
             },
           });
         },
