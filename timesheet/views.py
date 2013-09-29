@@ -9,6 +9,8 @@ from django.shortcuts import render_to_response
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 
+from datetime import timedelta
+
 from timesheet.models import Event
 
 @login_required
@@ -169,6 +171,74 @@ def events_delete(request):
         e = {}
         e['id'] = ev.id
         ev.delete()
+        output.append(e)
+    return HttpResponse(json.dumps(output), content_type = "application/json")
+
+@login_required
+def events_move(request):
+    params = request.POST
+    id = params.get('id')
+    if params == None or id == None:
+        raise PermissionDenied
+
+    try:
+        id = int(id)
+    except ValueError:
+        raise PermissionDenied
+
+    evs = Event.objects.filter(id = id, user = request.user)
+    if len(evs) <= 0:
+        raise PermissionDenied # FIXME
+
+    all_day = params.get('all_day')
+    day_delta = params.get('day_delta')
+    minute_delta = params.get('minute_delta')
+
+    if day_delta == None and minute_delta == None:
+        raise PermissionDenied
+
+    try:
+        if day_delta != None and minute_delta != None:
+            delta = timedelta(days = int(day_delta), minutes = int(minute_delta))
+        elif day_delta != None:
+            delta = timedelta(days = int(day_delta))
+        elif minute_delta != None:
+            delta = timedelta(minutes = int(minute_delta))
+    except ValueError:
+        raise PermissionDenied
+
+    all_day = params.get('all_day')
+    if all_day != None:
+        all_day = all_day.lower() == 'true'
+
+    # Update (memory only) and validate events parameters.
+    for ev in evs:
+        if ev.begin != None:
+            ev.begin += delta
+        if ev.end != None:
+            ev.end += delta
+        if all_day != None:
+            ev.all_day = all_day
+        # Validate event.
+        if ev.issue == None:
+            raise PermissionDenied
+        if ev.begin == None:
+            raise PermissionDenied
+        if not ev.all_day and ev.end != None and ev.begin > ev.end:
+            raise PermissionDenied
+
+    # Commit and prepare events to be returned.
+    output = []
+    for ev in evs:
+        ev.save()
+        e = {}
+        e['issue'] = ev.issue
+        e['begin'] = ev.begin.isoformat()
+        if ev.end != None:
+            e['end'] = ev.end.isoformat()
+        if ev.all_day != None:
+            e['all_day'] = ev.all_day
+        e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type = "application/json")
 

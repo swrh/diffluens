@@ -8,6 +8,7 @@ urlpatterns = patterns('',
     url(r'^events/read/$', views.events_read),
     url(r'^events/update/$', views.events_update),
     url(r'^events/delete/$', views.events_delete),
+    url(r'^events/move/$', views.events_move),
     url(r'^report/$', views.report),
 )
 
