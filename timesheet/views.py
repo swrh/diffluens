@@ -118,16 +118,8 @@ def events_update(request):
         end = dateutil.parser.parse(end).replace(tzinfo = None)
 
     all_day = params.get('all_day')
-    if all_day == None:
-        if end != None:
-            all_day = False
-        else:
-            all_day = True
-    else:
+    if all_day != None:
         all_day = all_day.lower() == 'true'
-
-    if not all_day and end == None:
-        raise PermissionDenied
 
     # Update (memory only) and validate events parameters.
     for ev in evs:
@@ -139,20 +131,13 @@ def events_update(request):
             ev.end = end
         if all_day != None:
             ev.all_day = all_day
-        if ev.all_day == None:
-            ev.all_day = ev.end == None
         # Validate event.
         if ev.issue == None:
             raise PermissionDenied
         if ev.begin == None:
             raise PermissionDenied
-        if not ev.all_day and ev.end == None:
+        if not ev.all_day and ev.end != None and ev.begin > ev.end:
             raise PermissionDenied
-        if not ev.all_day and ev.begin > ev.end:
-            if begin != None and end == None:
-                ev.end = None
-            else:
-                raise PermissionDenied
 
     # Commit and prepare events to be returned.
     output = []
@@ -163,7 +148,8 @@ def events_update(request):
         e['begin'] = ev.begin.isoformat()
         if ev.end != None:
             e['end'] = ev.end.isoformat()
-        e['all_day'] = ev.all_day
+        if ev.all_day != None:
+            e['all_day'] = ev.all_day
         e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type = "application/json")
