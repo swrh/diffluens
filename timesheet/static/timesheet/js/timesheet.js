@@ -464,7 +464,6 @@ $(document).ready(function() {
           $('#dialog-alert').dialogAlert('status', 'Please wait...');
 
           $.ajax({
-            async: false,
             url: '/timesheet/events/create/',
             type: 'POST',
             data: {
@@ -501,7 +500,6 @@ $(document).ready(function() {
           $('#dialog-alert').dialogAlert('status', 'Please wait...');
 
           $.ajax({
-            async: false,
             url: '/timesheet/events/update/',
             type: 'POST',
             data: {
@@ -538,7 +536,6 @@ $(document).ready(function() {
           $('#dialog-alert').dialogAlert('status', 'Please wait...');
 
           $.ajax({
-            async: false,
             url: '/timesheet/events/delete/',
             type: 'POST',
             data: {
