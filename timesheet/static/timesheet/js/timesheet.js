@@ -290,14 +290,27 @@
  * Diffluens + FullCalendar integration stuff.
  */
 (function() {
-  jsonD2F = function(d) {
-    var f = {};
+  jsonD2F = function(d, f) {
+    if (f == null) {
+      f = {};
+    }
     f.id = d.id;
     f.allDay = d.all_day;
     f.start = new Date(d.begin).offsetTZ();
     f.end = new Date(d.end).offsetTZ();
     f.title = '' + d.issue;
     return f;
+  }
+ jsonF2D = function(f, d) {
+    if (d == null) {
+      d = {}
+    }
+    d.id = f.id;
+    d.all_day = f.allDay;
+    d.begin = f.start.toISO();
+    d.end = f.end.toISO();
+    d.issue = parseInt(f.title);
+    return d;
   }
 })();
 
@@ -410,6 +423,7 @@ $(document).ready(function() {
       });
     },
     eventClick: function(event, jsEvent, view) {
+      var fc_event = event;
       $('#dialog-issue').dialogIssue('open', {
         event: {
           id: event.id,
@@ -417,6 +431,46 @@ $(document).ready(function() {
           begin: event.start,
           end: event.end,
           all_day: event.allDay,
+        },
+        onClickOk: function(event) {
+          $('#dialog-alert').dialog('option', 'title', 'Info');
+          $('#dialog-alert p').text('Please wait...');
+          $('#dialog-alert').dialog('open');
+
+          $.ajax({
+            async: false,
+            url: '/timesheet/events/update/',
+            type: 'POST',
+            data: {
+              id: event.id,
+              issue: event.issue,
+              begin: event.begin.toISO(),
+              end: event.end == null ? undefined : event.end.toISO(),
+              all_day: event.all_day,
+            },
+            success: function (data) {
+              $('#dialog-issue').dialogIssue('close');
+              if (data.length != 1) {
+                // Here we must delete all events by their ids first and then add
+                // all received events back again. We MUST NOT do in the same
+                // loop for almost obvious reasons I don't want to explain now.
+                for (var i = 0; i < data.length; i++) {
+                  $('#calendar').fullCalendar('removeEvents', data[i].id);
+                }
+                for (var i = 0; i < data.length; i++) {
+                  $('#calendar').fullCalendar('renderEvent', jsonD2F(data[i]));
+                }
+              } else {
+                jsonD2F(data[0], fc_event);
+                $('#calendar').fullCalendar('updateEvent', fc_event);
+              }
+              $('#dialog-alert').dialog('close');
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+              $('#dialog-alert').dialog('option', 'title', 'Error');
+              $('#dialog-alert p').text('Failure while updating event!');
+            },
+          });
         },
         onClickDelete: function(event) {
           $('#dialog-alert').dialog('option', 'title', 'Info');
