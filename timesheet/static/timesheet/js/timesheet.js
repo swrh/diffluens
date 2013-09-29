@@ -590,6 +590,40 @@ $(document).ready(function() {
         },
       });
     },
+    eventResize: function(event, dayDelta, minuteDelta, revertFunc) {
+      $('#dialog-alert').dialogAlert('status', 'Please wait...');
+
+      $.ajax({
+        url: '/timesheet/events/resize/',
+        type: 'POST',
+        data: {
+          id: event['id'],
+          day_delta: dayDelta,
+          minute_delta: minuteDelta,
+        },
+        success: function (data) {
+          if (data.length != 1) {
+            // Here we must delete all events by their ids first and then add
+            // all received events back again. We MUST NOT do in the same
+            // loop for almost obvious reasons I don't want to explain now.
+            for (var i = 0; i < data.length; i++) {
+              $('#calendar').fullCalendar('removeEvents', data[i].id);
+            }
+            for (var i = 0; i < data.length; i++) {
+              $('#calendar').fullCalendar('renderEvent', jsonD2F(data[i]));
+            }
+          } else {
+            jsonD2F(data[0], event);
+            $('#calendar').fullCalendar('updateEvent', event);
+          }
+          $('#dialog-alert').dialogAlert('close');
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+          revertFunc();
+          $('#dialog-alert').dialogAlert('error', 'Failure while moving event!');
+        },
+      });
+    },
   });
 });
 
