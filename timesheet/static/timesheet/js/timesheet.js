@@ -83,98 +83,8 @@
  * Date stuff.
  */
 (function() {
-  var numberToString = function(num, len) {
-    var str = '0000' + num;
-    return str.substr(str.length - len);
-  }
-
-  Date.prototype.ddmmyyyy = function() {
-    return numberToString(this.getDate(), 2) + '/' +
-      numberToString(this.getMonth() + 1, 2) + '/' +
-      numberToString(this.getFullYear(), 4);
-  }
-
-  Date.prototype.hhmm = function() {
-    return numberToString(this.getHours(), 2) + ':' +
-      numberToString(this.getMinutes(), 2);
-  }
-
-  Date.prototype.toISO = function() {
-    return numberToString(this.getFullYear(), 4) + '-' +
-      numberToString(this.getMonth() + 1, 2) + '-' +
-      numberToString(this.getDate(), 2) + 'T' +
-      numberToString(this.getHours(), 2) + ':' +
-      numberToString(this.getMinutes(), 2) + ':' +
-      numberToString(this.getSeconds(), 2);
-  }
-
-  Date.prototype.offsetTZ = function() {
-    this.setTime(this.getTime() + (this.getTimezoneOffset() * 60 * 1000));
-    return this;
-  }
-
-  /*
-   * For a given date, get the ISO week number
-   *
-   * Based on information at:
-   *
-   *    http://www.merlyn.demon.co.uk/weekcalc.htm#WNR
-   *
-   * Algorithm is to find nearest thursday, it's year
-   * is the year of the week number. Then get weeks
-   * between that date and the first day of that year.
-   *
-   * Note that dates in one year can be weeks of previous
-   * or next year, overlap is up to 3 days.
-   *
-   * e.g. 2014/12/29 is Monday in week  1 of 2015
-   *      2012/1/1   is Sunday in week 52 of 2011
-   */
-  Date.prototype.getWeekNumber = function() {
-    // Copy date so don't modify original
-    var d = new Date(this);
-    d.setHours(0,0,0);
-    // Set to nearest Thursday: current date + 4 - current day number
-    // Make Sunday's day number 7
-    d.setDate(d.getDate() + 4 - (d.getDay()||7));
-    // Get first day of year
-    var yearStart = new Date(d.getFullYear(),0,1);
-    // Calculate full weeks to nearest Thursday
-    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7)
-    // Return array of year and week number
-    return [d.getFullYear(), weekNo];
-  }
-})();
-
-/*
- * Array stuff.
- */
-(function() {
-  /*
-   * Attach the .compare method to Array's prototype to call it on any array.
-   */
-  Array.prototype.compare = function(array) {
-    // if the other array is a falsy value, return
-    if (!array)
-      return false;
-
-    // compare lengths - can save a lot of time
-    if (this.length != array.length)
-      return false;
-
-    for (var i = 0; i < this.length; i++) {
-      // Check if we have nested arrays
-      if (this[i] instanceof Array && array[i] instanceof Array) {
-        // recurse into the nested arrays
-        if (!this[i].compare(array[i]))
-          return false;
-      }
-      else if (this[i] != array[i]) {
-        // Warning - two different object instances will never be equal: {x:20} != {x:20}
-        return false;
-      }
-    }
-    return true;
+  moment.fn.format_notz = function() {
+    return this.format('YYYY-MM-DDTHH:mm:ss');
   }
 })();
 
@@ -349,15 +259,17 @@
     this.element.find('.tip').text('').removeClass('ui-state-highlight');
     this.element.find('.text').val('').removeClass('ui-state-error');
 
-    this.element.find('#date').val(this.event.begin.ddmmyyyy());
+    var begin = moment(this.event.begin);
+
+    this.element.find('#date').val(begin.format('DD/MM/YYYY'));
     if (this.event.all_day) {
       this.element.find('.issue-time').hide();
       this.element.find('#allday').prop('checked', true);
     } else {
       this.element.find('.issue-time').show();
       this.element.find('#allday').prop('checked', false);
-      this.element.find('#begin.text').val(this.event.begin.hhmm());
-      this.element.find('#end.text').val(this.event.end.hhmm());
+      this.element.find('#begin.text').val(begin.format('hh:mm'));
+      this.element.find('#end.text').val(moment(this.event.end).format('hh:mm'));
     }
     this.element.find('#issue.text').val(this.event.issue);
 
@@ -487,8 +399,8 @@
     }
     f.id = d.id;
     f.allDay = d.all_day;
-    f.start = new Date(d.begin).offsetTZ();
-    f.end = new Date(d.end).offsetTZ();
+    f.start = moment(d.begin).toDate();
+    f.end = moment(d.end).toDate();
     f.title = '' + d.issue;
     f.color = colorize(d.issue);
     return f;
@@ -499,8 +411,8 @@
     }
     d.id = f.id;
     d.all_day = f.allDay;
-    d.begin = f.start.toISO();
-    d.end = f.end.toISO();
+    d.begin = moment(f.start).format_notz();
+    d.end = moment(f.end).format_notz();
     d.issue = parseInt(f.title);
     return d;
   }
@@ -535,8 +447,8 @@ $(document).ready(function() {
         url: '/timesheet/events/read/',
         type: 'POST',
         data: {
-          begin: start.toISO(),
-          end: end.toISO(),
+          begin: moment(start).format_notz(),
+          end: moment(end).format_notz(),
         },
         success: function(data) {
           for (var i = 0; i < data.length; i++) {
@@ -562,7 +474,7 @@ $(document).ready(function() {
           // The user selected just one date: switch to that date.
           $('#calendar').fullCalendar('changeView', 'agendaDay');
           $('#calendar').fullCalendar('gotoDate', start.getFullYear(), start.getMonth(), start.getDate());
-        } else if (start.getWeekNumber().compare(end.getWeekNumber())) {
+        } else if (moment(start).week() == moment(end).week()) {
           // The user selected more than one date in just one week: switch to
           // that week.
           $('#calendar').fullCalendar('changeView', 'agendaWeek');
@@ -584,8 +496,8 @@ $(document).ready(function() {
             type: 'POST',
             data: {
               issue: event.issue,
-              begin: event.begin.toISO(),
-              end: event.end.toISO(),
+              begin: moment(event.begin).format_notz(),
+              end: moment(event.end).format_notz(),
               all_day: event.all_day,
             },
             success: function (data) {
@@ -621,8 +533,8 @@ $(document).ready(function() {
             data: {
               id: event.id,
               issue: event.issue,
-              begin: event.begin.toISO(),
-              end: event.end == null ? undefined : event.end.toISO(),
+              begin: moment(event.begin).format_notz(),
+              end: event.end == null ? undefined : moment(event.end).format_notz(),
               all_day: event.all_day,
             },
             success: function (data) {
