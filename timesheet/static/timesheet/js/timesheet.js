@@ -217,8 +217,8 @@
     } else {
       this.element.find('.issue-time').show();
       this.element.find('#allday').prop('checked', false);
-      this.element.find('#begin.text').val(begin.format('hh:mm'));
-      this.element.find('#end.text').val(moment(this.event.end).format('hh:mm'));
+      this.element.find('#begin.text').val(begin.format('HH:mm'));
+      this.element.find('#end.text').val(moment(this.event.end).format('HH:mm'));
     }
     this.element.find('#issue.text').val(this.event.issue);
 
