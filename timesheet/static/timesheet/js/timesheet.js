@@ -341,9 +341,7 @@
  */
 (function() {
   jsonD2F = function(d, f) {
-    if (f == null) {
-      f = {};
-    }
+    f = f || {};
     f.id = d.id;
     f.allDay = d.all_day;
     f.start = moment(d.begin).toDate();
@@ -353,9 +351,7 @@
     return f;
   };
   jsonF2D = function(f, d) {
-    if (d == null) {
-      d = {}
-    }
+    d = d || {};
     d.id = f.id;
     d.all_day = f.allDay;
     d.begin = moment(f.start).format_notz();
