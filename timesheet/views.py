@@ -20,11 +20,11 @@ def home(request):
 @login_required
 def events_create(request):
     params = request.POST
-    if params == None:
+    if params is None:
         raise PermissionDenied
     begin = params.get('begin')
     issue = params.get('issue')
-    if begin == None or issue == None:
+    if begin is None or issue is None:
         raise PermissionDenied
 
     try:
@@ -35,19 +35,19 @@ def events_create(request):
     begin = dateutil.parser.parse(begin).replace(tzinfo = None)
 
     end = params.get('end')
-    if end != None:
+    if end is not None:
         end = dateutil.parser.parse(end).replace(tzinfo = None)
 
     all_day = params.get('all_day')
-    if all_day == None:
-        if end != None:
+    if all_day is None:
+        if end is not None:
             all_day = False
         else:
             all_day = True
     else:
         all_day = all_day.lower() == 'true'
 
-    if not all_day and (end == None or begin > end):
+    if not all_day and (end is None or begin > end):
         raise PermissionDenied
 
     event = Event(issue = issue, begin = begin, end = end, all_day = all_day, user = request.user)
@@ -57,7 +57,7 @@ def events_create(request):
         e = {}
         e['issue'] = ev.issue
         e['begin'] = ev.begin.isoformat()
-        if ev.end != None:
+        if ev.end is not None:
             e['end'] = ev.end.isoformat()
         e['all_day'] = ev.all_day
         e['id'] = ev.id
@@ -67,11 +67,11 @@ def events_create(request):
 @login_required
 def events_read(request):
     params = request.POST
-    if params == None:
+    if params is None:
         raise PermissionDenied
     begin = params.get('begin')
     end = params.get('end')
-    if begin == None or end == None:
+    if begin is None or end is None:
         raise PermissionDenied
     begin = dateutil.parser.parse(begin).replace(tzinfo = None)
     end = dateutil.parser.parse(end).replace(tzinfo = None)
@@ -81,7 +81,7 @@ def events_read(request):
         e = {}
         e['issue'] = ev.issue
         e['begin'] = ev.begin.isoformat()
-        if ev.end != None:
+        if ev.end is not None:
             e['end'] = ev.end.isoformat()
         e['all_day'] = ev.all_day
         e['id'] = ev.id
@@ -92,7 +92,7 @@ def events_read(request):
 def events_update(request):
     params = request.POST
     id = params.get('id')
-    if params == None or id == None:
+    if params is None or id is None:
         raise PermissionDenied
 
     try:
@@ -105,40 +105,40 @@ def events_update(request):
         raise PermissionDenied # FIXME
 
     issue = params.get('issue')
-    if issue != None:
+    if issue is not None:
         try:
             issue = int(params['issue'])
         except ValueError:
             raise PermissionDenied
 
     begin = params.get('begin')
-    if begin != None:
+    if begin is not None:
         begin = dateutil.parser.parse(begin).replace(tzinfo = None)
 
     end = params.get('end')
-    if end != None:
+    if end is not None:
         end = dateutil.parser.parse(end).replace(tzinfo = None)
 
     all_day = params.get('all_day')
-    if all_day != None:
+    if all_day is not None:
         all_day = all_day.lower() == 'true'
 
     # Update (memory only) and validate events parameters.
     for ev in evs:
-        if issue != None:
+        if issue is not None:
             ev.issue = issue
-        if begin != None:
+        if begin is not None:
             ev.begin = begin
-        if end != None:
+        if end is not None:
             ev.end = end
-        if all_day != None:
+        if all_day is not None:
             ev.all_day = all_day
         # Validate event.
-        if ev.issue == None:
+        if ev.issue is None:
             raise PermissionDenied
-        if ev.begin == None:
+        if ev.begin is None:
             raise PermissionDenied
-        if not ev.all_day and ev.end != None and ev.begin > ev.end:
+        if not ev.all_day and ev.end is not None and ev.begin > ev.end:
             raise PermissionDenied
 
     # Commit and prepare events to be returned.
@@ -148,9 +148,9 @@ def events_update(request):
         e = {}
         e['issue'] = ev.issue
         e['begin'] = ev.begin.isoformat()
-        if ev.end != None:
+        if ev.end is not None:
             e['end'] = ev.end.isoformat()
-        if ev.all_day != None:
+        if ev.all_day is not None:
             e['all_day'] = ev.all_day
         e['id'] = ev.id
         output.append(e)
@@ -159,10 +159,10 @@ def events_update(request):
 @login_required
 def events_delete(request):
     params = request.POST
-    if params == None:
+    if params is None:
         raise PermissionDenied
     id = params.get('id')
-    if id == None:
+    if id is None:
         raise PermissionDenied
     id = int(id)
     evs = Event.objects.filter(id = id, user = request.user)
@@ -178,7 +178,7 @@ def events_delete(request):
 def events_move(request):
     params = request.POST
     id = params.get('id')
-    if params == None or id == None:
+    if params is None or id is None:
         raise PermissionDenied
 
     try:
@@ -194,37 +194,37 @@ def events_move(request):
     day_delta = params.get('day_delta')
     minute_delta = params.get('minute_delta')
 
-    if day_delta == None and minute_delta == None:
+    if day_delta is None and minute_delta is None:
         raise PermissionDenied
 
     try:
-        if day_delta != None and minute_delta != None:
+        if day_delta is not None and minute_delta is not None:
             delta = timedelta(days = int(day_delta), minutes = int(minute_delta))
-        elif day_delta != None:
+        elif day_delta is not None:
             delta = timedelta(days = int(day_delta))
-        elif minute_delta != None:
+        elif minute_delta is not None:
             delta = timedelta(minutes = int(minute_delta))
     except ValueError:
         raise PermissionDenied
 
     all_day = params.get('all_day')
-    if all_day != None:
+    if all_day is not None:
         all_day = all_day.lower() == 'true'
 
     # Update (memory only) and validate events parameters.
     for ev in evs:
-        if ev.begin != None:
+        if ev.begin is not None:
             ev.begin += delta
-        if ev.end != None:
+        if ev.end is not None:
             ev.end += delta
-        if all_day != None:
+        if all_day is not None:
             ev.all_day = all_day
         # Validate event.
-        if ev.issue == None:
+        if ev.issue is None:
             raise PermissionDenied
-        if ev.begin == None:
+        if ev.begin is None:
             raise PermissionDenied
-        if not ev.all_day and ev.end != None and ev.begin > ev.end:
+        if not ev.all_day and ev.end is not None and ev.begin > ev.end:
             raise PermissionDenied
 
     # Commit and prepare events to be returned.
@@ -234,9 +234,9 @@ def events_move(request):
         e = {}
         e['issue'] = ev.issue
         e['begin'] = ev.begin.isoformat()
-        if ev.end != None:
+        if ev.end is not None:
             e['end'] = ev.end.isoformat()
-        if ev.all_day != None:
+        if ev.all_day is not None:
             e['all_day'] = ev.all_day
         e['id'] = ev.id
         output.append(e)
@@ -246,7 +246,7 @@ def events_move(request):
 def events_resize(request):
     params = request.POST
     id = params.get('id')
-    if params == None or id == None:
+    if params is None or id is None:
         raise PermissionDenied
 
     try:
@@ -261,29 +261,29 @@ def events_resize(request):
     day_delta = params.get('day_delta')
     minute_delta = params.get('minute_delta')
 
-    if day_delta == None and minute_delta == None:
+    if day_delta is None and minute_delta is None:
         raise PermissionDenied
 
     try:
-        if day_delta != None and minute_delta != None:
+        if day_delta is not None and minute_delta is not None:
             delta = timedelta(days = int(day_delta), minutes = int(minute_delta))
-        elif day_delta != None:
+        elif day_delta is not None:
             delta = timedelta(days = int(day_delta))
-        elif minute_delta != None:
+        elif minute_delta is not None:
             delta = timedelta(minutes = int(minute_delta))
     except ValueError:
         raise PermissionDenied
 
     # Update (memory only) and validate events parameters.
     for ev in evs:
-        if ev.end != None:
+        if ev.end is not None:
             ev.end += delta
         # Validate event.
-        if ev.issue == None:
+        if ev.issue is None:
             raise PermissionDenied
-        if ev.begin == None:
+        if ev.begin is None:
             raise PermissionDenied
-        if not ev.all_day and ev.end != None and ev.begin > ev.end:
+        if not ev.all_day and ev.end is not None and ev.begin > ev.end:
             raise PermissionDenied
 
     # Commit and prepare events to be returned.
@@ -293,9 +293,9 @@ def events_resize(request):
         e = {}
         e['issue'] = ev.issue
         e['begin'] = ev.begin.isoformat()
-        if ev.end != None:
+        if ev.end is not None:
             e['end'] = ev.end.isoformat()
-        if ev.all_day != None:
+        if ev.all_day is not None:
             e['all_day'] = ev.all_day
         e['id'] = ev.id
         output.append(e)
