@@ -596,6 +596,13 @@ $(document).ready(function() {
         },
       });
     },
+    eventRender: function(event, element) {
+      var time = element.find('.fc-event-time');
+      var title = element.find('.fc-event-title');
+      var hours = Math.round((event.end - event.start) / 1000 / 60 / 60 * 100) / 100;
+      time.html(moment(event.start).format('HH:mm') + ' +' + hours);
+      title.html('#' + $('<div />').text(event.title).html());
+    },
   });
 });
 

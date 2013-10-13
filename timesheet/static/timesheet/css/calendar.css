@@ -19,3 +19,12 @@
 .issue-time-end {
   float: right;
 }
+
+.fc-event-time {
+  float: left;
+}
+
+.fc-event-title {
+  float: right;
+  text-align: right;
+}
