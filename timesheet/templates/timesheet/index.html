@@ -18,11 +18,21 @@
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.2.1/moment.min.js"></script>
     <script type="text/javascript" src="{% static "timesheet/js/timesheet.js" %}"></script>
   </head>
-  <body>
-    <div id="calendar"></div>
+<body>
+  <div id='wrap'>
+    <div id='redmine-events'>
+      <h4>Draggable Events</h4>
+      <div class='redmine-event'>#0</div>
+      <div class='redmine-event'>#1000</div>
+      <div class='redmine-event'>#2000</div>
+      <div class='redmine-event'>#3000</div>
+    </div>
+    <div id='calendar'></div>
     <div id="dialog-alert"></div>
     <div id="dialog-issue"></div>
-  </body>
+    <div style='clear:both'></div>
+  </div>
+</body>
 </html>
 
 <!-- vim:set ft=htmldjango et: -->

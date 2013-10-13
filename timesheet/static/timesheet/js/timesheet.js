@@ -380,6 +380,7 @@ $(document).ready(function() {
     },
     theme: true,
     editable: true,
+    droppable: true,
     axisFormat: 'HH:mm',
     timeFormat: {
       agenda: 'HH:mm{ - HH:mm}',
@@ -603,7 +604,63 @@ $(document).ready(function() {
       time.html(moment(event.start).format('HH:mm') + ' +' + hours);
       title.html('#' + $('<div />').text(event.title).html());
     },
+    drop: function(date, allDay) { // this function is called when something is dropped
+      // retrieve the dropped element's stored Event Object
+      var issue = $(this).data('eventObject').title.replace( /[^\d]/g, '');
+      // assign it the date that was reported
+      var start = date;
+      var end = moment(date).add('hours', 1);
+      $('#dialog-issue').dialogIssue('open', {
+        event: {
+          begin: start,
+          end: end,
+          all_day: allDay,
+          issue: issue,
+        },
+        onClickOk: function(event) {
+          $('#dialog-alert').dialogAlert('status', 'Please wait...');
+
+          $.ajax({
+            url: '/timesheet/events/create/',
+            type: 'POST',
+            data: {
+              issue: event.issue,
+              begin: moment(event.begin).format_notz(),
+              end: moment(event.end).format_notz(),
+              all_day: event.all_day,
+            },
+            success: function(data) {
+              $('#dialog-issue').dialogIssue('close');
+              for (var i = 0; i < data.length; i++) {
+                calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+              }
+              $('#dialog-alert').dialogAlert('close');
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+              $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
+            },
+          });
+        },
+      });
+    }
   });
+
+  $('#redmine-events div.redmine-event').each(function() {
+    // create an Event Object (http://arshaw.com/fullcalendar/docs/event_data/Event_Object/)
+    // it doesn't need to have a start or end
+    var eventObject = {
+      title: $(this).text(), // use the element's text as the event title
+    };
+    // store the Event Object in the DOM element so we can get to it later
+    $(this).data('eventObject', eventObject);
+    // make the event draggable using jQuery UI
+    $(this).draggable({
+      zIndex: 1000,
+      revert: true,      // will cause the event to go back to its
+      revertDuration: 0, // original position after the drag
+    });
+  });
+
 });
 
 // vim:set et:
