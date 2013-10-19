@@ -387,6 +387,7 @@ $(document).ready(function() {
       '': 'HH:mm{ - HH:mm}',
     },
     slotMinutes: 15,
+    defaultView: 'agendaWeek',
     events: function(start, end, callback) {
       $.ajax({
         url: '/timesheet/events/read/',
@@ -647,7 +648,7 @@ $(document).ready(function() {
     },
   });
 
-  $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div><br />');
+  $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div>');
   $.ajax({
     url: '/timesheet/redmine/issues/assigned/',
     type: 'POST',

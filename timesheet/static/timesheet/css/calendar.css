@@ -20,8 +20,8 @@
   float: right;
 }
 
-body {
-  margin-top: 40px;
+.fc-agenda-slots td div {
+  height: 15px;
 }
 
 .fc-event-time {
@@ -33,36 +33,72 @@ body {
   text-align: right;
 }
 
+#left h4 {
+  font-size: 16px;
+  margin-top: 0;
+  padding-top: .5em;
+}
+
+.redmine-issue { /* try to mimick the look of a real event */
+  margin: 10px 0;
+  padding: 3px 4px;
+  background: #3366cc;
+  color: #ffffff;
+  font-size: .85em;
+  cursor: pointer;
+}
+
+/*
+ * Redmine-ish theme on top of the Redmond jQuery UI theme.
+ */
+body {
+  font-size: 13px;
+  margin-top: 25px;
+  background-color: #eeeeee;
+}
+
+body, .ui-widget {
+  font-family: Verdana, sans-serif;
+}
+
+.ui-widget-header {
+  background: #507aaa url('');
+}
+
+.ui-widget-header {
+  border-color: #4c6076;
+}
+
+.ui-widget-content {
+  border-color: #e6e9ef;
+}
+
+.fc-today {
+	background: #ffffdd;
+}
+
+.ui-state-active {
+  color: #2e6e9e;
+}
+
 #wrap {
   width: 1100px;
   margin: 0 auto;
 }
 
-#redmine-issues {
-  float: left;
-  width: 150px;
-  padding: 0 10px;
-  border: 1px solid #ccc;
-  background: #eee;
+#wrap>div {
+  padding: 10px;
+  border: 1px solid #cccccc;
+  background-color: #ffffff;
   text-align: left;
 }
 
-#redmine-issues h4 {
-  font-size: 16px;
-  margin-top: 0;
-  padding-top: 1em;
+#wrap #left {
+  float: left;
+  width: 150px;
 }
 
-.redmine-issue { /* try to mimick the look of a real event */
-  margin: 10px 0;
-  padding: 2px 4px;
-  background: #3366CC;
-  color: #fff;
-  font-size: .85em;
-  cursor: pointer;
-}
-
-#calendar {
+#wrap #right {
   float: right;
   width: 900px;
 }
