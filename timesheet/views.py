@@ -3,6 +3,7 @@ import csv
 
 import dateutil.parser
 
+from django.core.cache import cache
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
@@ -14,6 +15,10 @@ from datetime import timedelta
 from redmine import Redmine
 
 from timesheet.models import Event, UserSettings
+
+
+REDMINE_URL = 'http://redmine.orbisat.com.br'
+CACHE_EXPIRES = 60 * 10  # 10 minutes
 
 
 @login_required
@@ -329,15 +334,18 @@ def redmine_issues_assigned(request):
     if params is None:
         raise PermissionDenied
 
-    redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
-    redmine = Redmine('http://redmine.orbisat.com.br', key=redmine_api_key)
-
-    output = []
-    for issue in redmine.issues(assigned_to_id=redmine.user.id):
-        output.append({
-            'id': issue.id,
-            'subject': issue.subject,
-        })
+    cache_key = 'redmine-issues-assigned-%u' % request.user.id
+    output = cache.get(cache_key)
+    if output is None:
+        redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
+        redmine = Redmine(REDMINE_URL, key=redmine_api_key)
+        output = []
+        for issue in redmine.issues(assigned_to_id=redmine.user.id):
+            output.append({
+                'id': issue.id,
+                'subject': issue.subject,
+            })
+        cache.set(cache_key, output, CACHE_EXPIRES)
 
     return HttpResponse(json.dumps(output), content_type='application/json')
 

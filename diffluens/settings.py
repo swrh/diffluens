@@ -166,5 +166,12 @@ LOGGING = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake'
+    }
+}
+
 # vim:set et:
 # vi:set sw=4 ts=4:
