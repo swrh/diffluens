@@ -11,7 +11,9 @@ from django.db.models import Q
 
 from datetime import timedelta
 
-from timesheet.models import Event
+from redmine import Redmine
+
+from timesheet.models import Event, UserSettings
 
 
 @login_required
@@ -319,6 +321,25 @@ def events_resize(request):
         e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
+
+
+@login_required
+def redmine_issues_assigned(request):
+    params = request.POST
+    if params is None:
+        raise PermissionDenied
+
+    redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
+    redmine = Redmine('http://redmine.orbisat.com.br', key=redmine_api_key)
+
+    output = []
+    for issue in redmine.issues(assigned_to_id=redmine.user.id):
+        output.append({
+            'id': issue.id,
+            'subject': issue.subject,
+        })
+
+    return HttpResponse(json.dumps(output), content_type='application/json')
 
 
 @login_required

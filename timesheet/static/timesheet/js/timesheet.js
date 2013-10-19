@@ -605,9 +605,11 @@ $(document).ready(function() {
       title.html('#' + $('<div />').text(event.title).html());
     },
     drop: function(date, allDay) { // this function is called when something is dropped
+      // Put this issue on the top of the list.
+      $(this).detach();
+      $('#redmine-issues-assigned').prepend($(this));
       // retrieve the dropped element's stored Event Object
-      var issue = $(this).data('eventObject').title.replace( /[^\d]/g, '');
-      // assign it the date that was reported
+      var issue = $(this).data('eventObject').title.replace( / .*$/g, '').replace( /[^\d]/g, '');
       var start = date;
       var end = moment(date).add('hours', 1);
       $('#dialog-issue').dialogIssue('open', {
@@ -642,25 +644,39 @@ $(document).ready(function() {
           });
         },
       });
-    }
+    },
   });
 
-  $('#redmine-events div.redmine-event').each(function() {
-    // create an Event Object (http://arshaw.com/fullcalendar/docs/event_data/Event_Object/)
-    // it doesn't need to have a start or end
-    var eventObject = {
-      title: $(this).text(), // use the element's text as the event title
-    };
-    // store the Event Object in the DOM element so we can get to it later
-    $(this).data('eventObject', eventObject);
-    // make the event draggable using jQuery UI
-    $(this).draggable({
-      zIndex: 1000,
-      revert: true,      // will cause the event to go back to its
-      revertDuration: 0, // original position after the drag
-    });
+  $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div><br />');
+  $.ajax({
+    url: '/timesheet/redmine/issues/assigned/',
+    type: 'POST',
+    success: function(data) {
+      var issues = $('#redmine-issues-assigned');
+      issues.html('');
+      for (var i = 0; i < data.length; i++) {
+        issues.append('<div class="redmine-issue" style="background: ' + colorize(data[i].id) + ';"><b>#' + $('<div />').text(data[i].id).html() + '</b><br />' + $('<div />').text(data[i].subject).html() + '</div>');
+      }
+      $('#redmine-issues-assigned div.redmine-issue').each(function() {
+        // create an Event Object (http://arshaw.com/fullcalendar/docs/event_data/Event_Object/)
+        // it doesn't need to have a start or end
+        var eventObject = {
+          title: $(this).text(), // use the element's text as the event title
+        };
+        // store the Event Object in the DOM element so we can get to it later
+        $(this).data('eventObject', eventObject);
+        // make the event draggable using jQuery UI
+        $(this).draggable({
+          zIndex: 1000,
+          revert: true,      // will cause the event to go back to its
+          revertDuration: 0, // original position after the drag
+        });
+      });
+    },
+    error: function(XMLHttpRequest, textStatus, errorThrown) {
+      $('#redmine-issues-assigned').html('<div><i>Error loading data.</i></div><br />')
+    },
   });
-
 });
 
 // vim:set et:

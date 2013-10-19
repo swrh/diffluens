@@ -10,6 +10,7 @@ urlpatterns = patterns('',
                        url(r'^events/delete/$', views.events_delete),
                        url(r'^events/move/$', views.events_move),
                        url(r'^events/resize/$', views.events_resize),
+                       url(r'^redmine/issues/assigned/$', views.redmine_issues_assigned),
                        url(r'^report/$', views.report),
                        )
 

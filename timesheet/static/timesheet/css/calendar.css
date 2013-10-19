@@ -38,7 +38,7 @@ body {
   margin: 0 auto;
 }
 
-#redmine-events {
+#redmine-issues {
   float: left;
   width: 150px;
   padding: 0 10px;
@@ -47,13 +47,13 @@ body {
   text-align: left;
 }
 
-#redmine-events h4 {
+#redmine-issues h4 {
   font-size: 16px;
   margin-top: 0;
   padding-top: 1em;
 }
 
-.redmine-event { /* try to mimick the look of a real event */
+.redmine-issue { /* try to mimick the look of a real event */
   margin: 10px 0;
   padding: 2px 4px;
   background: #3366CC;
