@@ -409,7 +409,9 @@ $(document).ready(function() {
           var ids = [];
           for (var i = 0; i < data.length; i++) {
             ids[i] = data[i].issue;
+            data[i] = jsonD2F(data[i]);
           }
+          callback(data);
           $.ajax({
             url: '/timesheet/redmine/issues/read/',
             type: 'POST',
@@ -418,17 +420,16 @@ $(document).ready(function() {
             },
             success: function(issueData) {
               for (var i = 0; i < data.length; i++) {
-                var issue = issueData[data[i].issue];
-                var d = jsonD2F(data[i]);
+                var issue = issueData[ids[i]];
+                var d = data[i];
                 d.valid = false;
                 if (issue) {
                   d.subject = issue.subject;
                   d.project = issue.project;
                   d.valid = true;
                 }
-                data[i] = d;
               }
-              callback(data);
+              calendar.fullCalendar('rerenderEvents');
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
               for (var i = 0; i < data.length; i++) {
