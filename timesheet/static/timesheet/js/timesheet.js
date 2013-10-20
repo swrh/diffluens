@@ -707,6 +707,8 @@ $(document).ready(function() {
       });
     },
   });
+
+  // Load the assigned Redmine issues.
   $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div>');
   $.ajax({
     url: '/timesheet/redmine/issues/assigned/',
@@ -717,9 +719,9 @@ $(document).ready(function() {
         var issue = $('<div />');
         issue.css('background', colorize(d));
         issue.attr('class', 'redmine-issue');
-        issue.attr('title', '[' + data[d].project + ']' + ' ' + data[d].subject);
-        issue.append($('<div />').attr('class', 'redmine-issue-id').append(htmlize('#' + d)));
-        issue.append($('<div />').attr('class', 'redmine-issue-project').append(htmlize(data[d].project)));
+        issue.attr('title', data[d].subject);
+        issue.append($('<div />').attr('class', 'redmine-issue-id').html(htmlize('#' + d)));
+        issue.append($('<div />').attr('class', 'redmine-issue-project').html(htmlize(data[d].project)));
         issues.append(issue);
       }
       $('#redmine-issues-assigned div.redmine-issue').each(function() {
