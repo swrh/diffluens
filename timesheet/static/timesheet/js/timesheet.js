@@ -708,6 +708,16 @@ $(document).ready(function() {
     },
   });
 
+  // Enable jQuery UI tooltip (not working with FullCalendar events yet).
+  $(document).tooltip({
+    hide: false,
+    position: {
+      my: 'left center',
+      at: 'right center',
+      collision: 'flipfit',
+    },
+  });
+
   // Load the assigned Redmine issues.
   $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div>');
   $.ajax({
