@@ -351,6 +351,52 @@ def redmine_issues_assigned(request):
 
 
 @login_required
+def redmine_issues_read(request):
+    params = request.POST
+    ids = params.getlist('ids[]')
+    if params is None or ids is None:
+        raise PermissionDenied
+
+    # Remove duplicated ids.
+    ids = list(set(ids))
+
+    cache_key = 'redmine-issues-read-%u' % request.user.id
+    issues = cache.get(cache_key, {})
+
+    ids_to_fetch = []
+    for id_ in ids:
+        if id_ not in issues.keys():
+            ids_to_fetch.append(id_)
+
+    if len(ids_to_fetch) > 0:
+        redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
+        redmine = Redmine(REDMINE_URL, key=redmine_api_key)
+        for id_ in ids_to_fetch:
+            try:
+                issue = redmine.issues[id_]
+                data = {
+                    'subject': issue.subject,
+                    'project': issue.project.name,
+                }
+            except KeyError:
+                data = {
+                    'invalid': True,
+                }
+            issues[id_] = data
+        print 'cache.set(%s)' % cache_key
+        cache.set(cache_key, issues, CACHE_EXPIRES)
+
+    output = {}
+    for id_ in ids:
+        issue = issues[id_]
+        if issue.get('invalid', False):
+            continue
+        output[id_] = issue
+
+    return HttpResponse(json.dumps(output), content_type='application/json')
+
+
+@login_required
 def report(request):
     response = HttpResponse(content_type='text/plain')
     writer = csv.writer(response)

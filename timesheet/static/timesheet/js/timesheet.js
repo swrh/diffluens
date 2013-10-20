@@ -397,10 +397,37 @@ $(document).ready(function() {
           end: moment(end).format_notz(),
         },
         success: function(data) {
+          var ids = [];
           for (var i = 0; i < data.length; i++) {
-            data[i] = jsonD2F(data[i]);
+            ids[i] = data[i].issue;
           }
-          callback(data);
+          $.ajax({
+            url: '/timesheet/redmine/issues/read/',
+            type: 'POST',
+            data: {
+              ids: ids,
+            },
+            success: function(issueData) {
+              for (var i = 0; i < data.length; i++) {
+                var issue = issueData[data[i].issue];
+                var d = jsonD2F(data[i]);
+                d.valid = false;
+                if (issue) {
+                  d.subject = issue.subject;
+                  d.project = issue.project;
+                  d.valid = true;
+                }
+                data[i] = d;
+              }
+              callback(data);
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+              for (var i = 0; i < data.length; i++) {
+                data[i] = jsonD2F(data[i]);
+              }
+              callback(data);
+            },
+          });
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
           $('#dialog-alert').dialogAlert('error', 'Failure while fetching events!');
@@ -599,11 +626,38 @@ $(document).ready(function() {
       });
     },
     eventRender: function(event, element) {
+      var subject = '';
+      if (event.valid) {
+        subject = '';
+        if (event.project) {
+          subject += ' [' + event.project + ']';
+        }
+        if (event.subject) {
+          subject += ' ' + event.subject;
+        }
+      }
+      // Tooltip
+      element.attr('title', '#' + event.title + subject);
       var time = element.find('.fc-event-time');
       var title = element.find('.fc-event-title');
       var hours = Math.round((event.end - event.start) / 1000 / 60 / 60 * 100) / 100;
       time.html(moment(event.start).format('HH:mm') + ' +' + hours);
-      title.html('#' + $('<div />').text(event.title).html());
+      title.html($('<div />').text('#' + event.title).html());
+      var basicView = calendar.fullCalendar('getView')['name'].indexOf('agenda') != 0;
+      if (!basicView && event.valid) {
+        subject = '<br /><div>';
+        if (event.project) {
+          subject += '<b><i>' + $('<div />').text(event.project).html() + '</i></b>';
+          if (event.subject) {
+            subject += '<br />';
+          }
+        }
+        if (event.subject) {
+          subject += $('<div />').text(event.subject).html();
+        }
+        subject += '</div>';
+        title.parent().append(subject);
+      }
     },
     drop: function(date, allDay) { // this function is called when something is dropped
       // Put this issue on the top of the list.
@@ -647,7 +701,6 @@ $(document).ready(function() {
       });
     },
   });
-
   $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div>');
   $.ajax({
     url: '/timesheet/redmine/issues/assigned/',
@@ -656,7 +709,8 @@ $(document).ready(function() {
       var issues = $('#redmine-issues-assigned');
       issues.html('');
       for (var i = 0; i < data.length; i++) {
-        issues.append('<div class="redmine-issue" style="background: ' + colorize(data[i].id) + ';"><b>#' + $('<div />').text(data[i].id).html() + '</b><br />' + $('<div />').text(data[i].subject).html() + '</div>');
+        issues.append('<div class="redmine-issue" title="' + data[i].subject.replace(/"/g, "&quot;") + '" style="background: ' + colorize(data[i].id) + ';"><b>#' + $('<div />').text(data[i].id).html() + '</b><br />' + $('<div />').text(data[i].subject).html() + '</div>');
+//        issues.append('<div class="redmine-issue" style="background: ' + colorize(data[i].id) + ';"><b>#' + $('<div />').text(data[i].id).html() + '</b><br />' + $('<div />').text(data[i].subject).html() + '</div>');
       }
       $('#redmine-issues-assigned div.redmine-issue').each(function() {
         // create an Event Object (http://arshaw.com/fullcalendar/docs/event_data/Event_Object/)

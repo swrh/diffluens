@@ -11,6 +11,7 @@ urlpatterns = patterns('',
                        url(r'^events/move/$', views.events_move),
                        url(r'^events/resize/$', views.events_resize),
                        url(r'^redmine/issues/assigned/$', views.redmine_issues_assigned),
+                       url(r'^redmine/issues/read/$', views.redmine_issues_read),
                        url(r'^report/$', views.report),
                        )
 
