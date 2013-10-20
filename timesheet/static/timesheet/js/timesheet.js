@@ -337,6 +337,15 @@
 })(jQuery);
 
 /*
+ * Miscellaneous.
+ */
+(function($) {
+  htmlize = function(str) {
+    return $('<div />').text(str).html();
+  };
+})(jQuery);
+
+/*
  * Diffluens + FullCalendar integration stuff.
  */
 (function() {
@@ -660,9 +669,6 @@ $(document).ready(function() {
       }
     },
     drop: function(date, allDay) { // this function is called when something is dropped
-      // Put this issue on the top of the list.
-      $(this).detach();
-      $('#redmine-issues-assigned').prepend($(this));
       // retrieve the dropped element's stored Event Object
       var issue = $(this).data('eventObject').title.replace( / .*$/g, '').replace( /[^\d]/g, '');
       var start = date;
@@ -706,11 +712,15 @@ $(document).ready(function() {
     url: '/timesheet/redmine/issues/assigned/',
     type: 'POST',
     success: function(data) {
-      var issues = $('#redmine-issues-assigned');
-      issues.html('');
-      for (var i = 0; i < data.length; i++) {
-        issues.append('<div class="redmine-issue" title="' + data[i].subject.replace(/"/g, "&quot;") + '" style="background: ' + colorize(data[i].id) + ';"><b>#' + $('<div />').text(data[i].id).html() + '</b><br />' + $('<div />').text(data[i].subject).html() + '</div>');
-//        issues.append('<div class="redmine-issue" style="background: ' + colorize(data[i].id) + ';"><b>#' + $('<div />').text(data[i].id).html() + '</b><br />' + $('<div />').text(data[i].subject).html() + '</div>');
+      var issues = $('#redmine-issues-assigned').html('');
+      for (var d in data) {
+        var issue = $('<div />');
+        issue.css('background', colorize(d));
+        issue.attr('class', 'redmine-issue');
+        issue.attr('title', '[' + data[d].project + ']' + ' ' + data[d].subject);
+        issue.append($('<div />').attr('class', 'redmine-issue-id').append(htmlize('#' + d)));
+        issue.append($('<div />').attr('class', 'redmine-issue-project').append(htmlize(data[d].project)));
+        issues.append(issue);
       }
       $('#redmine-issues-assigned div.redmine-issue').each(function() {
         // create an Event Object (http://arshaw.com/fullcalendar/docs/event_data/Event_Object/)

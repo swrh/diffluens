@@ -21,6 +21,38 @@ REDMINE_URL = 'http://redmine.orbisat.com.br'
 CACHE_EXPIRES = 60 * 10  # 10 minutes
 
 
+class RedmineIssuesCache:
+    def __init__(self, user):
+        self._redmine = None
+        self._user = user
+        self._cache_key = 'redmine-issues-%u' % self._user.id
+        self._issues = cache.get(self._cache_key, {})
+
+    def _get_redmine(self):
+        if self._redmine is None:
+            redmine_api_key = UserSettings.objects.filter(user=self._user)[0].redmine_api_key
+            self._redmine = Redmine(REDMINE_URL, key=redmine_api_key)
+        return self._redmine
+
+    def get_issue(self, id_):
+        if self._issues.get(id_, None) is None:
+            r = self._get_redmine()
+            try:
+                issue = r.issues[id_]
+                data = {
+                    'subject': issue.subject,
+                    'project': issue.project.name,
+                    'valid': True,
+                }
+            except KeyError:
+                data = {
+                    'valid': False,
+                }
+            self._issues[id_] = data
+            cache.set(self._cache_key, self._issues, CACHE_EXPIRES)
+        return self._issues[id_]
+
+
 @login_required
 def home(request):
     return render_to_response('timesheet/index.html', dict(user=request.user))
@@ -335,17 +367,20 @@ def redmine_issues_assigned(request):
         raise PermissionDenied
 
     cache_key = 'redmine-issues-assigned-%u' % request.user.id
-    output = cache.get(cache_key)
-    if output is None:
+    assigned_issue_ids = cache.get(cache_key)
+    if assigned_issue_ids is None:
         redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
         redmine = Redmine(REDMINE_URL, key=redmine_api_key)
-        output = []
-        for issue in redmine.issues(assigned_to_id=redmine.user.id):
-            output.append({
-                'id': issue.id,
-                'subject': issue.subject,
-            })
-        cache.set(cache_key, output, CACHE_EXPIRES)
+        assigned_issue_ids = [i.id for i in redmine.issues(assigned_to_id=redmine.user.id)]
+        cache.set(cache_key, assigned_issue_ids, CACHE_EXPIRES)
+
+    issues_cache = RedmineIssuesCache(request.user)
+
+    output = {}
+    for id_ in assigned_issue_ids:
+        issue = issues_cache.get_issue(id_)
+        if issue['valid']:
+            output[id_] = issue
 
     return HttpResponse(json.dumps(output), content_type='application/json')
 
@@ -360,38 +395,13 @@ def redmine_issues_read(request):
     # Remove duplicated ids.
     ids = list(set(ids))
 
-    cache_key = 'redmine-issues-read-%u' % request.user.id
-    issues = cache.get(cache_key, {})
-
-    ids_to_fetch = []
-    for id_ in ids:
-        if id_ not in issues.keys():
-            ids_to_fetch.append(id_)
-
-    if len(ids_to_fetch) > 0:
-        redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
-        redmine = Redmine(REDMINE_URL, key=redmine_api_key)
-        for id_ in ids_to_fetch:
-            try:
-                issue = redmine.issues[id_]
-                data = {
-                    'subject': issue.subject,
-                    'project': issue.project.name,
-                }
-            except KeyError:
-                data = {
-                    'invalid': True,
-                }
-            issues[id_] = data
-        print 'cache.set(%s)' % cache_key
-        cache.set(cache_key, issues, CACHE_EXPIRES)
+    issues_cache = RedmineIssuesCache(request.user)
 
     output = {}
     for id_ in ids:
-        issue = issues[id_]
-        if issue.get('invalid', False):
-            continue
-        output[id_] = issue
+        issue = issues_cache.get_issue(id_)
+        if issue['valid']:
+            output[id_] = issue
 
     return HttpResponse(json.dumps(output), content_type='application/json')
 

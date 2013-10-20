@@ -41,11 +41,23 @@
 
 .redmine-issue { /* try to mimick the look of a real event */
   margin: 10px 0;
-  padding: 3px 4px;
+  padding: 3px 5px;
   background: #3366cc;
   color: #ffffff;
   font-size: .85em;
   cursor: pointer;
+  min-height: 14px;
+}
+
+.redmine-issue .redmine-issue-id {
+  float: left;
+  font-weight: bold;
+}
+
+.redmine-issue .redmine-issue-project {
+  float: right;
+  font-weight: bold;
+  font-style: italic;
 }
 
 /*
