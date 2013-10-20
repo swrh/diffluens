@@ -14,6 +14,7 @@ class Event(models.Model):
     end = models.DateTimeField(null=True, blank=True)
     all_day = models.BooleanField()
     user = models.ForeignKey(User)
+    read_only = models.BooleanField(default=False)
 
 # vi:set sw=4 ts=4:
 # vim:set et:

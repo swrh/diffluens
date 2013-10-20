@@ -187,6 +187,8 @@ def events_update(request):
             raise PermissionDenied
         if not ev.all_day and ev.end is not None and ev.begin > ev.end:
             raise PermissionDenied
+        if ev.read_only:
+            raise PermissionDenied
 
     # Commit and prepare events to be returned.
     output = []
@@ -215,6 +217,9 @@ def events_delete(request):
         raise PermissionDenied
     id_ = int(id_)
     evs = Event.objects.filter(id=id_, user=request.user)
+    for ev in evs:
+        if ev.read_only:
+            raise PermissionDenied
     output = []
     for ev in evs:
         e = {
@@ -275,6 +280,8 @@ def events_move(request):
         if ev.begin is None:
             raise PermissionDenied
         if not ev.all_day and ev.end is not None and ev.begin > ev.end:
+            raise PermissionDenied
+        if ev.read_only:
             raise PermissionDenied
 
     # Commit and prepare events to be returned.
@@ -341,6 +348,8 @@ def events_resize(request):
         if ev.begin is None:
             raise PermissionDenied
         if not ev.all_day and ev.end is not None and ev.begin > ev.end:
+            raise PermissionDenied
+        if ev.read_only:
             raise PermissionDenied
 
     # Commit and prepare events to be returned.
@@ -410,7 +419,7 @@ def redmine_issues_read(request):
 def report(request):
     response = HttpResponse(content_type='text/plain')
     writer = csv.writer(response)
-    for ev in Event.objects.all():
+    for ev in Event.objects.filter(read_only=False):
         writer.writerow([
             ev.begin.strftime('%Y%m%d'),
             ev.begin.strftime('%H:%M:%S'),
