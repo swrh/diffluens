@@ -365,6 +365,12 @@
     } else {
       f.color = colorize(~0);
     }
+    if (d === f) {
+      delete f.all_day;
+      delete f.begin;
+      delete f.issue;
+      delete f.issue_info;
+    }
     return f;
   };
   jsonF2D = function(f, d) {
@@ -375,6 +381,12 @@
     d.end = moment(f.end).format_notz();
     d.issue = parseInt(f.title);
     d.issue_info = f.issueInfo;
+    if (f === d) {
+      delete d.allDay;
+      delete d.start;
+      delete d.title;
+      delete d.issueInfo;
+    }
     return d;
   };
 })();
