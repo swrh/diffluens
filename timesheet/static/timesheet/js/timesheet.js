@@ -651,18 +651,18 @@ $(document).ready(function() {
       var title = element.find('.fc-event-title');
       var hours = Math.round((event.end - event.start) / 1000 / 60 / 60 * 100) / 100;
       time.html(moment(event.start).format('HH:mm') + ' +' + hours);
-      title.html($('<div />').text('#' + event.title).html());
+      title.html(htmlize('#' + event.title));
       var basicView = calendar.fullCalendar('getView')['name'].indexOf('agenda') != 0;
       if (!basicView && event.valid) {
         subject = '<br /><div>';
         if (event.project) {
-          subject += '<b><i>' + $('<div />').text(event.project).html() + '</i></b>';
+          subject += '<b><i>' + htmlize(event.project) + '</i></b>';
           if (event.subject) {
             subject += '<br />';
           }
         }
         if (event.subject) {
-          subject += $('<div />').text(event.subject).html();
+          subject += htmlize(event.subject);
         }
         subject += '</div>';
         title.parent().append(subject);
