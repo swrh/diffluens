@@ -47,6 +47,7 @@
   font-size: .85em;
   cursor: pointer;
   min-height: 14px;
+  border-radius: 3px;
 }
 
 .redmine-issue .redmine-issue-id {
