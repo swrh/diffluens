@@ -672,38 +672,24 @@ $(document).ready(function() {
     drop: function(date, allDay) { // this function is called when something is dropped
       // retrieve the dropped element's stored Event Object
       var issue = $(this).data('eventObject').title.replace( / .*$/g, '').replace( /[^\d]/g, '');
-      var start = date;
-      var end = moment(date).add('hours', 1);
-      $('#dialog-issue').dialogIssue('open', {
-        event: {
-          begin: start,
-          end: end,
-          all_day: allDay,
+      $.ajax({
+        url: '/timesheet/events/create/',
+        type: 'POST',
+        data: {
           issue: issue,
+          begin: moment(date).format_notz(),
+          end: moment(date).add('hours', 2).format_notz(),
+          all_day: allDay,
         },
-        onClickOk: function(event) {
-          $('#dialog-alert').dialogAlert('status', 'Please wait...');
-
-          $.ajax({
-            url: '/timesheet/events/create/',
-            type: 'POST',
-            data: {
-              issue: event.issue,
-              begin: moment(event.begin).format_notz(),
-              end: moment(event.end).format_notz(),
-              all_day: event.all_day,
-            },
-            success: function(data) {
-              $('#dialog-issue').dialogIssue('close');
-              for (var i = 0; i < data.length; i++) {
-                calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
-              }
-              $('#dialog-alert').dialogAlert('close');
-            },
-            error: function(XMLHttpRequest, textStatus, errorThrown) {
-              $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
-            },
-          });
+        success: function(data) {
+          $('#dialog-issue').dialogIssue('close');
+          for (var i = 0; i < data.length; i++) {
+            calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+          }
+          $('#dialog-alert').dialogAlert('close');
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+          $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
         },
       });
     },
