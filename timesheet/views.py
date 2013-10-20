@@ -419,7 +419,13 @@ def redmine_issues_read(request):
 def report(request):
     response = HttpResponse(content_type='text/plain')
     writer = csv.writer(response)
+    issues_cache = RedmineIssuesCache(request.user)
     for ev in Event.objects.filter(read_only=False):
+        issue = issues_cache.get_issue(ev.issue)
+        if issue['valid']:
+            description = '%s (#%d)' % (issue['subject'].encode('utf-8'), ev.issue)
+        else:
+            description = '#%d' % ev.issue
         writer.writerow([
             ev.begin.strftime('%Y%m%d'),
             ev.begin.strftime('%H:%M:%S'),
@@ -427,7 +433,7 @@ def report(request):
             '',
             request.user.usersettings.protheus_resource,
             '',
-            '#%d' % ev.issue,
+            description,
         ])
     return response
 
