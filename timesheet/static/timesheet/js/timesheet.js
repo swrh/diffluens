@@ -79,6 +79,9 @@
   };
 
   colorize = function(number) {
+    if (number == ~0) {
+      return '#ee0000';
+    }
     var crc = crc32('' + number);
 
     /* Put the colors between 32 and 223. */
@@ -356,7 +359,12 @@
     f.start = moment(d.begin).toDate();
     f.end = moment(d.end).toDate();
     f.title = '' + d.issue;
-    f.color = colorize(d.issue);
+    f.issueInfo = d.issue_info;
+    if (f.issueInfo !== null) {
+      f.color = colorize(d.issue);
+    } else {
+      f.color = colorize(~0);
+    }
     return f;
   };
   jsonF2D = function(f, d) {
@@ -366,6 +374,7 @@
     d.begin = moment(f.start).format_notz();
     d.end = moment(f.end).format_notz();
     d.issue = parseInt(f.title);
+    d.issue_info = f.issueInfo;
     return d;
   };
 })();
@@ -412,30 +421,26 @@ $(document).ready(function() {
             data[i] = jsonD2F(data[i]);
           }
           callback(data);
+          var uniqIds = [];
+          $.each(ids, function(i, el) {
+            if ($.inArray(el, uniqIds) === -1) {
+              uniqIds.push(el);
+            }
+          });
           $.ajax({
             url: '/timesheet/redmine/issues/read/',
             type: 'POST',
             data: {
-              ids: ids,
+              ids: uniqIds,
             },
             success: function(issueData) {
               for (var i = 0; i < data.length; i++) {
-                var issue = issueData[ids[i]];
                 var d = data[i];
-                d.valid = false;
-                if (issue) {
-                  d.subject = issue.subject;
-                  d.project = issue.project;
-                  d.valid = true;
-                }
+                d.issueInfo = issueData[ids[i]] || null;
+                jsonF2D(data[i], data[i]);
+                jsonD2F(data[i], data[i]);
               }
               calendar.fullCalendar('rerenderEvents');
-            },
-            error: function(XMLHttpRequest, textStatus, errorThrown) {
-              for (var i = 0; i < data.length; i++) {
-                data[i] = jsonD2F(data[i]);
-              }
-              callback(data);
             },
           });
         },
@@ -485,10 +490,35 @@ $(document).ready(function() {
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');
+              var ids = [];
               for (var i = 0; i < data.length; i++) {
-                calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+                ids[i] = data[i].issue;
+                data[i] = jsonD2F(data[i]);
+                calendar.fullCalendar('renderEvent', data[i]);
               }
               $('#dialog-alert').dialogAlert('close');
+              var uniqIds = [];
+              $.each(ids, function(i, el) {
+                if ($.inArray(el, uniqIds) === -1) {
+                  uniqIds.push(el);
+                }
+              });
+              $.ajax({
+                url: '/timesheet/redmine/issues/read/',
+                type: 'POST',
+                data: {
+                  ids: uniqIds,
+                },
+                success: function(issueData) {
+                  for (var i = 0; i < data.length; i++) {
+                    var d = data[i];
+                    d.issueInfo = issueData[ids[i]] || null;
+                    jsonF2D(data[i], data[i]);
+                    jsonD2F(data[i], data[i]);
+                  }
+                  calendar.fullCalendar('rerenderEvents');
+                },
+              });
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
               $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
@@ -522,21 +552,48 @@ $(document).ready(function() {
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');
+              var ids = [];
               if (data.length != 1) {
                 // Here we must delete all events by their ids first and then add
                 // all received events back again. We MUST NOT do in the same
                 // loop for almost obvious reasons I don't want to explain now.
+                calendar.fullCalendar('removeEvents', fc_event.id);
                 for (var i = 0; i < data.length; i++) {
                   calendar.fullCalendar('removeEvents', data[i].id);
+                  ids[i] = data[i].issue;
+                  data[i] = jsonD2F(data[i]);
                 }
                 for (var i = 0; i < data.length; i++) {
-                  calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+                  calendar.fullCalendar('renderEvent', data[i]);
                 }
               } else {
-                jsonD2F(data[0], fc_event);
+                ids[0] = data[0].issue;
+                data[0] = jsonD2F(data[0], fc_event);
                 calendar.fullCalendar('updateEvent', fc_event);
               }
               $('#dialog-alert').dialogAlert('close');
+              var uniqIds = [];
+              $.each(ids, function(i, el) {
+                if ($.inArray(el, uniqIds) === -1) {
+                  uniqIds.push(el);
+                }
+              });
+              $.ajax({
+                url: '/timesheet/redmine/issues/read/',
+                type: 'POST',
+                data: {
+                  ids: uniqIds,
+                },
+                success: function(issueData) {
+                  for (var i = 0; i < data.length; i++) {
+                    var d = data[i];
+                    d.issueInfo = issueData[ids[i]] || null;
+                    jsonF2D(data[i], data[i]);
+                    jsonD2F(data[i], data[i]);
+                  }
+                  calendar.fullCalendar('rerenderEvents');
+                },
+              });
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
               $('#dialog-alert').dialogAlert('error', 'Failure while updating event!');
@@ -585,12 +642,16 @@ $(document).ready(function() {
             // loop for almost obvious reasons I don't want to explain now.
             for (var i = 0; i < data.length; i++) {
               calendar.fullCalendar('removeEvents', data[i].id);
+              data[i] = jsonD2F(data[i]);
             }
             for (var i = 0; i < data.length; i++) {
-              calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+              calendar.fullCalendar('renderEvent', data[i]);
             }
           } else {
-            jsonD2F(data[0], event);
+            if (event !== undefined && data[0].issueInfo === undefined) {
+              data[0].issue_info = event.issueInfo;
+            }
+            data[0] = jsonD2F(data[0], event);
             calendar.fullCalendar('updateEvent', event);
           }
           $('#dialog-alert').dialogAlert('close');
@@ -619,12 +680,16 @@ $(document).ready(function() {
             // loop for almost obvious reasons I don't want to explain now.
             for (var i = 0; i < data.length; i++) {
               calendar.fullCalendar('removeEvents', data[i].id);
+              data[i] = jsonD2F(data[i]);
             }
             for (var i = 0; i < data.length; i++) {
-              calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+              calendar.fullCalendar('renderEvent', data[i]);
             }
           } else {
-            jsonD2F(data[0], event);
+            if (event !== undefined && data[0].issueInfo === undefined) {
+              data[0].issue_info = event.issueInfo;
+            }
+            data[0] = jsonD2F(data[0], event);
             calendar.fullCalendar('updateEvent', event);
           }
           $('#dialog-alert').dialogAlert('close');
@@ -637,13 +702,13 @@ $(document).ready(function() {
     },
     eventRender: function(event, element) {
       var subject = '';
-      if (event.valid) {
+      if (event.issueInfo) {
         subject = '';
-        if (event.project) {
-          subject += ' [' + event.project + ']';
+        if (event.issueInfo.project) {
+          subject += ' [' + event.issueInfo.project + ']';
         }
-        if (event.subject) {
-          subject += ' ' + event.subject;
+        if (event.issueInfo.subject) {
+          subject += ' ' + event.issueInfo.subject;
         }
       }
       // Tooltip
@@ -654,16 +719,16 @@ $(document).ready(function() {
       time.html(moment(event.start).format('HH:mm') + ' +' + hours);
       title.html(htmlize('#' + event.title));
       var basicView = calendar.fullCalendar('getView')['name'].indexOf('agenda') != 0;
-      if (!basicView && event.valid) {
+      if (!basicView && event.issueInfo) {
         subject = '<br /><div>';
-        if (event.project) {
-          subject += '<b><i>' + htmlize(event.project) + '</i></b>';
-          if (event.subject) {
+        if (event.issueInfo.project) {
+          subject += '<b><i>' + htmlize(event.issueInfo.project) + '</i></b>';
+          if (event.issueInfo.subject) {
             subject += '<br />';
           }
         }
-        if (event.subject) {
-          subject += htmlize(event.subject);
+        if (event.issueInfo.subject) {
+          subject += htmlize(event.issueInfo.subject);
         }
         subject += '</div>';
         title.parent().append(subject);
@@ -683,10 +748,35 @@ $(document).ready(function() {
         },
         success: function(data) {
           $('#dialog-issue').dialogIssue('close');
+          ids = [];
           for (var i = 0; i < data.length; i++) {
-            calendar.fullCalendar('renderEvent', jsonD2F(data[i]));
+            ids[0] = data[i].issue;
+            data[i] = jsonD2F(data[i]);
+            calendar.fullCalendar('renderEvent', data[i]);
           }
           $('#dialog-alert').dialogAlert('close');
+          var uniqIds = [];
+          $.each(ids, function(i, el) {
+            if ($.inArray(el, uniqIds) === -1) {
+              uniqIds.push(el);
+            }
+          });
+          $.ajax({
+            url: '/timesheet/redmine/issues/read/',
+            type: 'POST',
+            data: {
+              ids: uniqIds,
+            },
+            success: function(issueData) {
+              for (var i = 0; i < data.length; i++) {
+                var d = data[i];
+                d.issueInfo = issueData[ids[i]] || null;
+                jsonF2D(data[i], data[i]);
+                jsonD2F(data[i], data[i]);
+              }
+              calendar.fullCalendar('rerenderEvents');
+            },
+          });
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
           $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
