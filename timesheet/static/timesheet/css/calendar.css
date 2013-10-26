@@ -70,8 +70,10 @@ body {
   background-color: #eeeeee;
 }
 
-body, .ui-widget {
-  font-family: 'Open Sans', sans-serif;
+body,
+.ui-widget,
+.ui-widget input {
+  font-family: 'Open Sans', sans-serif !important;
 }
 
 .ui-widget-header {
