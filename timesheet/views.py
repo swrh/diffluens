@@ -417,10 +417,29 @@ def redmine_issues_read(request):
 
 @login_required
 def report(request):
+    evs = Event.objects.filter(read_only=False, user=request.user)
+    evs_ids = []
+    issues_cache = RedmineIssuesCache(request.user)
+    errors = []
+    for ev in evs:
+        evs_ids.append(ev.id)
+        evs_conflict = Event.objects.filter(Q(begin__gte=ev.begin, begin__lt=ev.end) |
+                                            Q(end__gt=ev.begin, end__lte=ev.end) |
+                                            Q(begin__lte=ev.begin, end__gte=ev.end),
+                                            ~Q(id__in=evs_ids),
+                                            user=request.user)
+        for evc in evs_conflict:
+            errors.append('Event %d (#%d, %s-%s) conflicts with event %d (#%d, %s-%s)' % (
+                ev.id, ev.issue, ev.begin.isoformat(), ev.end.isoformat(), evc.id, evc.issue, evc.begin.isoformat(), evc.end.isoformat()))
+        issue = issues_cache.get_issue(ev.issue)
+        if not issue['valid']:
+            errors.append('Event %d (%s-%s) points to invalid issue #%d' % (
+                ev.id, ev.begin.isoformat(), ev.end.isoformat(), ev.issue))
+    if len(errors) > 0:
+        return HttpResponse('\n'.join(errors), content_type='text/plain')
     response = HttpResponse(content_type='text/plain')
     writer = csv.writer(response)
-    issues_cache = RedmineIssuesCache(request.user)
-    for ev in Event.objects.filter(read_only=False):
+    for ev in evs:
         issue = issues_cache.get_issue(ev.issue)
         if issue['valid']:
             description = '%s (#%d)' % (issue['subject'].encode('utf-8'), ev.issue)
