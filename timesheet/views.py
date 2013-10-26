@@ -466,24 +466,23 @@ def report(request):
     if len(errors) > 0:
         return HttpResponse('\n'.join(errors), content_type='text/plain')
     mapper = RedmineProtheusMapping(issues_cache)
-    response = HttpResponse(content_type='text/plain')
-    writer = csv.writer(response)
+    output = []
     for ev in evs:
         issue = issues_cache.get_issue(ev.issue)
         if issue['valid']:
-            description = '%s (#%d)' % (issue['subject'], ev.issue)
+            description = '%s (#%d)' % (unicodedata.normalize('NFKD', issue['subject']).encode('ascii', 'ignore'), ev.issue)
         else:
             description = '#%d' % ev.issue
-        writer.writerow([
+        output.append(' %-15s %-15s %-15s %-15s %-15s %-30s %s' % (
             ev.begin.strftime('%Y%m%d'),
             ev.begin.strftime('%H:%M:%S'),
             ev.end.strftime('%H:%M:%S'),
             mapper.get_protheus(ev.issue, 'project'),
             request.user.usersettings.protheus_resource,
             mapper.get_protheus(ev.issue, 'issue'),
-            description.encode('utf-8'),
-        ])
-    return response
+            description,
+        ))
+    return HttpResponse('\n'.join(output), content_type='text/plain')
 
 # vim:set et:
 # vi:set sw=4 ts=4:
