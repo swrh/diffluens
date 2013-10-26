@@ -2,6 +2,11 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class Settings(models.Model):
+    redmine_url = models.CharField(max_length=256)
+    cache_expires = models.IntegerField()
+
+
 class UserSettings(models.Model):
     user = models.OneToOneField(User, primary_key=True)
     protheus_resource = models.CharField(max_length=16, null=True, blank=False)

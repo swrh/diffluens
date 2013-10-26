@@ -14,11 +14,7 @@ from datetime import timedelta
 
 from redmine import Redmine
 
-from timesheet.models import Event, UserSettings
-
-
-REDMINE_URL = 'http://redmine.orbisat.com.br'
-CACHE_EXPIRES = 60 * 10  # 10 minutes
+from timesheet.models import Event, UserSettings, Settings
 
 
 class RedmineIssuesCache:
@@ -30,8 +26,9 @@ class RedmineIssuesCache:
 
     def _get_redmine(self):
         if self._redmine is None:
+            redmine_url = Settings.objects.all()[0].redmine_url
             redmine_api_key = UserSettings.objects.filter(user=self._user)[0].redmine_api_key
-            self._redmine = Redmine(REDMINE_URL, key=redmine_api_key)
+            self._redmine = Redmine(redmine_url, key=redmine_api_key)
         return self._redmine
 
     def get_issue(self, id_):
@@ -49,7 +46,8 @@ class RedmineIssuesCache:
                     'valid': False,
                 }
             self._issues[id_] = data
-            cache.set(self._cache_key, self._issues, CACHE_EXPIRES)
+            cache_expires = Settings.objects.all()[0].cache_expires
+            cache.set(self._cache_key, self._issues, cache_expires)
         return self._issues[id_]
 
 
@@ -378,10 +376,12 @@ def redmine_issues_assigned(request):
     cache_key = 'redmine-issues-assigned-%u' % request.user.id
     assigned_issue_ids = cache.get(cache_key)
     if assigned_issue_ids is None:
+        redmine_url = Settings.objects.all()[0].redmine_url
         redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
-        redmine = Redmine(REDMINE_URL, key=redmine_api_key)
+        redmine = Redmine(redmine_url, key=redmine_api_key)
         assigned_issue_ids = [i.id for i in redmine.issues(assigned_to_id=redmine.user.id)]
-        cache.set(cache_key, assigned_issue_ids, CACHE_EXPIRES)
+        cache_expires = Settings.objects.all()[0].cache_expires
+        cache.set(cache_key, assigned_issue_ids, cache_expires)
 
     issues_cache = RedmineIssuesCache(request.user)
 
