@@ -1,5 +1,7 @@
 import json
 import csv
+import re
+import unicodedata
 
 import dateutil.parser
 
@@ -24,7 +26,7 @@ class RedmineIssuesCache:
         self._cache_key = 'redmine-issues-%u' % self._user.id
         self._issues = cache.get(self._cache_key, {})
 
-    def _get_redmine(self):
+    def get_redmine(self):
         if self._redmine is None:
             redmine_url = Settings.objects.all()[0].redmine_url
             redmine_api_key = UserSettings.objects.filter(user=self._user)[0].redmine_api_key
@@ -33,12 +35,18 @@ class RedmineIssuesCache:
 
     def get_issue(self, id_):
         if self._issues.get(id_, None) is None:
-            r = self._get_redmine()
+            r = self.get_redmine()
             try:
                 issue = r.issues[id_]
+                if hasattr(issue, 'parent'):
+                    issue.parent.refresh()
+                    parent = issue.parent.id
+                else:
+                    parent = None
                 data = {
                     'subject': issue.subject,
                     'project': issue.project.name,
+                    'parent': parent,
                     'valid': True,
                 }
             except KeyError:
@@ -49,6 +57,26 @@ class RedmineIssuesCache:
             cache_expires = Settings.objects.all()[0].cache_expires
             cache.set(self._cache_key, self._issues, cache_expires)
         return self._issues[id_]
+
+
+class RedmineProtheusMapping:
+    def __init__(self, issues_cache):
+        self._issues_cache = issues_cache
+        self._searches = {
+            'project': re.compile(r'\[P:([0-9.]+)]'),
+            'issue': re.compile(r'\[T:([0-9.]+)]'),
+        }
+
+    def get_protheus(self, issue, entry):
+        i = self._issues_cache.get_issue(issue)
+        if not i['valid']:
+            return None
+        s = self._searches[entry].search(i['subject'])
+        if not s:
+            if 'parent' not in i.keys():
+                return None
+            return self.get_protheus(i['parent'], entry)
+        return s.group(1)
 
 
 @login_required
@@ -437,22 +465,23 @@ def report(request):
                 ev.id, ev.begin.isoformat(), ev.end.isoformat(), ev.issue))
     if len(errors) > 0:
         return HttpResponse('\n'.join(errors), content_type='text/plain')
+    mapper = RedmineProtheusMapping(issues_cache)
     response = HttpResponse(content_type='text/plain')
     writer = csv.writer(response)
     for ev in evs:
         issue = issues_cache.get_issue(ev.issue)
         if issue['valid']:
-            description = '%s (#%d)' % (issue['subject'].encode('utf-8'), ev.issue)
+            description = '%s (#%d)' % (issue['subject'], ev.issue)
         else:
             description = '#%d' % ev.issue
         writer.writerow([
             ev.begin.strftime('%Y%m%d'),
             ev.begin.strftime('%H:%M:%S'),
             ev.end.strftime('%H:%M:%S'),
-            '',
+            mapper.get_protheus(ev.issue, 'project'),
             request.user.usersettings.protheus_resource,
-            '',
-            description,
+            mapper.get_protheus(ev.issue, 'issue'),
+            description.encode('utf-8'),
         ])
     return response
 
