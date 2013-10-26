@@ -26,6 +26,9 @@ class RedmineIssuesCache:
         self._cache_key = 'redmine-issues-%u' % self._user.id
         self._issues = cache.get(self._cache_key, {})
 
+    def clear(self):
+        self._issues = {}
+
     def get_redmine(self):
         if self._redmine is None:
             redmine_url = Settings.objects.all()[0].redmine_url
@@ -445,16 +448,19 @@ def redmine_issues_read(request):
 
 @login_required
 def report(request):
-    evs = Event.objects.filter(read_only=False, user=request.user)
-    evs_ids = []
     issues_cache = RedmineIssuesCache(request.user)
+    mapper = RedmineProtheusMapping(issues_cache)
+    issues_cache.clear()
+    evs = Event.objects.filter(read_only=False, user=request.user)
+    verified_events = []
+    verified_issues = []
     errors = []
     for ev in evs:
-        evs_ids.append(ev.id)
+        verified_events.append(ev.id)
         evs_conflict = Event.objects.filter(Q(begin__gte=ev.begin, begin__lt=ev.end) |
                                             Q(end__gt=ev.begin, end__lte=ev.end) |
                                             Q(begin__lte=ev.begin, end__gte=ev.end),
-                                            ~Q(id__in=evs_ids),
+                                            ~Q(id__in=verified_events),
                                             user=request.user)
         for evc in evs_conflict:
             errors.append('Event %d (#%d, %s-%s) conflicts with event %d (#%d, %s-%s)' % (
@@ -463,9 +469,15 @@ def report(request):
         if not issue['valid']:
             errors.append('Event %d (%s-%s) points to invalid issue #%d' % (
                 ev.id, ev.begin.isoformat(), ev.end.isoformat(), ev.issue))
+        elif ev.issue not in verified_issues:
+            if not mapper.get_protheus(ev.issue, 'project'):
+                errors.append('Redmine issue #%d has no Protheus project associated with it' % ev.issue)
+            if not mapper.get_protheus(ev.issue, 'issue'):
+                errors.append('Redmine issue #%d has no Protheus issue associated with it' % ev.issue)
+        if ev.issue not in verified_issues:
+            verified_issues.append(ev.issue)
     if len(errors) > 0:
         return HttpResponse('\n'.join(errors), content_type='text/plain')
-    mapper = RedmineProtheusMapping(issues_cache)
     output = []
     for ev in evs:
         issue = issues_cache.get_issue(ev.issue)
