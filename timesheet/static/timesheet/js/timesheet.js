@@ -177,6 +177,11 @@
         '<label class="label-block" for="issue">Issue</label>\n' +
         '<input id="issue" class="text ui-corner-all ui-widget-content input-block" type="text" autofocus />\n' +
         '</form>');
+    element.find('#issue').keypress(function (e) {
+      if (e.keyCode == $.ui.keyCode.ENTER) {
+        element.parent().find('.ui-dialog-buttonpane button:first').focus();
+      }
+    });
     element.dialog({
       minWidth: 300,
       autoOpen: false,
