@@ -79,6 +79,9 @@
   };
 
   colorize = function(number) {
+    if (number == 0) {
+      return '#cccccc';
+    }
     if (number == ~0) {
       return '#ee0000';
     }
@@ -360,16 +363,20 @@
     f.end = moment(d.end).toDate();
     f.title = '' + d.issue;
     f.issueInfo = d.issue_info;
-    if (f.issueInfo !== null) {
-      f.color = colorize(d.issue);
-    } else {
+    f.readOnly = d.read_only;
+    if (f.readOnly) {
+      f.color = colorize(0);
+    } else if (f.issueInfo === null) {
       f.color = colorize(~0);
+    } else {
+      f.color = colorize(d.issue);
     }
     if (d === f) {
       delete f.all_day;
       delete f.begin;
       delete f.issue;
       delete f.issue_info;
+      delete f.read_only;
     }
     return f;
   };
@@ -381,11 +388,13 @@
     d.end = moment(f.end).format_notz();
     d.issue = parseInt(f.title);
     d.issue_info = f.issueInfo;
+    d.read_only = f.readOnly;
     if (f === d) {
       delete d.allDay;
       delete d.start;
       delete d.title;
       delete d.issueInfo;
+      delete d.readOnly;
     }
     return d;
   };

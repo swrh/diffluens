@@ -127,11 +127,13 @@ def events_create(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'id': ev.id,
+            'read_only': ev.read_only,
         }
         if ev.end is not None:
             e['end'] = ev.end.isoformat()
-        e['all_day'] = ev.all_day
-        e['id'] = ev.id
+        if ev.all_day is not None:
+            e['all_day'] = ev.all_day
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -155,11 +157,13 @@ def events_read(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'id': ev.id,
+            'read_only': ev.read_only,
         }
         if ev.end is not None:
             e['end'] = ev.end.isoformat()
-        e['all_day'] = ev.all_day
-        e['id'] = ev.id
+        if ev.all_day is not None:
+            e['all_day'] = ev.all_day
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -226,12 +230,13 @@ def events_update(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'id': ev.id,
+            'read_only': ev.read_only,
         }
         if ev.end is not None:
             e['end'] = ev.end.isoformat()
         if ev.all_day is not None:
             e['all_day'] = ev.all_day
-        e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -320,12 +325,13 @@ def events_move(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'id': ev.id,
+            'read_only': ev.read_only,
         }
         if ev.end is not None:
             e['end'] = ev.end.isoformat()
         if ev.all_day is not None:
             e['all_day'] = ev.all_day
-        e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -388,12 +394,13 @@ def events_resize(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'id': ev.id,
+            'read_only': ev.read_only,
         }
         if ev.end is not None:
             e['end'] = ev.end.isoformat()
         if ev.all_day is not None:
             e['all_day'] = ev.all_day
-        e['id'] = ev.id
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
