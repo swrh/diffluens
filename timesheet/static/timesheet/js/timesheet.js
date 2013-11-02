@@ -221,17 +221,22 @@
 
     var begin = moment(this.event.begin);
 
+    if (this.event.end == null) {
+      this.event.end = begin.clone().add('hours', 2).toDate();
+    }
+    var end = moment(this.event.end);
+
     this.element.find('#date').val(begin.format('DD/MM/YYYY'));
+    this.element.find('#allday').prop('checked', this.event.all_day);
+    this.element.find('#begin.text').val(begin.format('HH:mm'));
+    this.element.find('#end.text').val(end.format('HH:mm'));
+    this.element.find('#issue.text').val(this.event.issue);
+
     if (this.event.all_day) {
       this.element.find('.issue-time').hide();
-      this.element.find('#allday').prop('checked', true);
     } else {
       this.element.find('.issue-time').show();
-      this.element.find('#allday').prop('checked', false);
-      this.element.find('#begin.text').val(begin.format('HH:mm'));
-      this.element.find('#end.text').val(moment(this.event.end).format('HH:mm'));
     }
-    this.element.find('#issue.text').val(this.event.issue);
 
     this.element.dialog('open');
   };
@@ -365,7 +370,11 @@
     f.id = d.id;
     f.allDay = d.all_day;
     f.start = moment(d.begin).toDate();
-    f.end = moment(d.end).toDate();
+    if (d.end != null) {
+      f.end = moment(d.end).toDate();
+    } else {
+      delete f.end;
+    }
     f.title = '' + d.issue;
     f.issueInfo = d.issue_info;
     f.readOnly = d.read_only;
@@ -390,7 +399,11 @@
     d.id = f.id;
     d.all_day = f.allDay;
     d.begin = moment(f.start).format_notz();
-    d.end = moment(f.end).format_notz();
+    if (f.end != null) {
+      d.end = moment(f.end).format_notz();
+    } else {
+      delete d.end;
+    }
     d.issue = parseInt(f.title);
     d.issue_info = f.issueInfo;
     d.read_only = f.readOnly;
@@ -741,8 +754,15 @@ $(document).ready(function() {
       element.attr('title', '#' + event.title + subject);
       var time = element.find('.fc-event-time');
       var title = element.find('.fc-event-title');
-      var hours = Math.round((event.end - event.start) / 1000 / 60 / 60 * 100) / 100;
-      time.html(moment(event.start).format('HH:mm') + ' +' + hours);
+      var start = moment(event.start);
+      var end;
+      if (event.end != null) {
+        end = moment(event.end);
+      } else {
+        end = start.clone().add('hours', 2);
+      }
+      var hours = Math.round((end - start) / 1000 / 60 / 60 * 100) / 100;
+      time.html(start.format('HH:mm') + ' +' + hours);
       title.html(htmlize('#' + event.title));
       var basicView = calendar.fullCalendar('getView')['name'].indexOf('agenda') != 0;
       if (!basicView && event.issueInfo) {
