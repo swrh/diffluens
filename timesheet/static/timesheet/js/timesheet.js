@@ -433,7 +433,7 @@
 /*
  * Initialization stuff.
  */
-$(document).ready(function() {
+$(window).bind('load', function() {
   $('#dialog-alert').dialogAlert();
   $('#dialog-issue').dialogIssue();
 
