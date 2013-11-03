@@ -862,12 +862,13 @@ $(document).ready(function() {
   });
 
   // Load the assigned Redmine issues.
-  $('#redmine-issues-assigned').html('<div><i>Loading data...</i></div>');
+  var redmine_issues_assigned = $('#redmine-issues-assigned');
+  redmine_issues_assigned.html('<div><i>Loading data...</i></div>');
   $.ajax({
     url: '/timesheet/redmine/issues/assigned/',
     type: 'POST',
     success: function(data) {
-      var issues = $('#redmine-issues-assigned').html('');
+      redmine_issues_assigned.html('');
       for (var d in data) {
         var issue = $('<div />');
         issue.css('background', colorize(d));
@@ -875,9 +876,9 @@ $(document).ready(function() {
         issue.attr('title', data[d].subject);
         issue.append($('<div />').attr('class', 'redmine-issue-id').html(htmlize('#' + d)));
         issue.append($('<div />').attr('class', 'redmine-issue-project').html(htmlize(data[d].project)));
-        issues.append(issue);
+        redmine_issues_assigned.append(issue);
       }
-      $('#redmine-issues-assigned div.redmine-issue').each(function() {
+      redmine_issues_assigned.find('div.redmine-issue').each(function() {
         // create an Event Object (http://arshaw.com/fullcalendar/docs/event_data/Event_Object/)
         // it doesn't need to have a start or end
         var eventObject = {
@@ -894,7 +895,7 @@ $(document).ready(function() {
       });
     },
     error: function(XMLHttpRequest, textStatus, errorThrown) {
-      $('#redmine-issues-assigned').html('<div><i>Error loading data.</i></div><br />')
+      redmine_issues_assigned.html('<div><i>Error loading data.</i></div><br />')
     },
   });
 });
