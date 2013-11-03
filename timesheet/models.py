@@ -17,7 +17,6 @@ class Event(models.Model):
     issue = models.IntegerField()
     begin = models.DateTimeField()
     end = models.DateTimeField(null=True, blank=True)
-    all_day = models.BooleanField()
     user = models.ForeignKey(User)
     read_only = models.BooleanField(default=False)
 

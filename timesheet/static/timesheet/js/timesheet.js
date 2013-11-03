@@ -165,7 +165,6 @@
       '<form>\n' +
         '<label class="label-block" for="date">Date</label>\n' +
         '<input id="date" class="text ui-corner-all ui-widget-content input-block" type="text" />\n' +
-        '<label><input name="allday" id="allday" type="checkbox" /> All day</label>\n' +
         '<div class="issue-time">\n' +
         '<div class="issue-time-begin">\n' +
         '<label class="label-block" for="begin">Begin</label>\n' +
@@ -182,13 +181,6 @@
     element.find('#issue').keypress(function (e) {
       if (e.keyCode == $.ui.keyCode.ENTER) {
         element.parent().find('.ui-dialog-buttonpane button:first').focus();
-      }
-    });
-    element.find('#allday').change(function() {
-      if ($(this).prop('checked')) {
-        element.find('.issue-time').hide();
-      } else {
-        element.find('.issue-time').show();
       }
     });
     element.dialog({
@@ -228,23 +220,12 @@
     this.element.find('.text').val('').removeClass('ui-state-error');
 
     var begin = moment(this.event.begin);
-
-    if (this.event.end == null) {
-      this.event.end = begin.clone().add('hours', 2).toDate();
-    }
     var end = moment(this.event.end);
 
     this.element.find('#date').val(begin.format(this.options.dateFormat));
-    this.element.find('#allday').prop('checked', this.event.all_day);
     this.element.find('#begin.text').val(begin.format(this.options.timeFormat));
     this.element.find('#end.text').val(end.format(this.options.timeFormat));
     this.element.find('#issue.text').val(this.event.issue);
-
-    if (this.event.all_day) {
-      this.element.find('.issue-time').hide();
-    } else {
-      this.element.find('.issue-time').show();
-    }
 
     this.element.dialog('open');
   };
@@ -261,23 +242,20 @@
       invalid = true;
     }
 
-    var all_day = this.element.find('#allday').prop('checked');
-
     var begin, end;
-    if (!all_day) {
-      tmp = this.element.find('#begin.text').val().trim();
-      begin = moment(tmp, this.options.timeFormat);
-      if (begin.format(this.options.timeFormat).localeCompare(tmp) != 0) {
-        this.element.find('#begin.text').addClass('ui-state-error');
-        invalid = true;
-      }
 
-      tmp = this.element.find('#end.text').val().trim();
-      end = moment(tmp, this.options.timeFormat);
-      if (end.format(this.options.timeFormat).localeCompare(tmp) != 0) {
-        this.element.find('#end.text').addClass('ui-state-error');
-        invalid = true;
-      }
+    tmp = this.element.find('#begin.text').val().trim();
+    begin = moment(tmp, this.options.timeFormat);
+    if (begin.format(this.options.timeFormat).localeCompare(tmp) != 0) {
+      this.element.find('#begin.text').addClass('ui-state-error');
+      invalid = true;
+    }
+
+    tmp = this.element.find('#end.text').val().trim();
+    end = moment(tmp, this.options.timeFormat);
+    if (end.format(this.options.timeFormat).localeCompare(tmp) != 0) {
+      this.element.find('#end.text').addClass('ui-state-error');
+      invalid = true;
     }
 
     tmp = this.element.find('#issue.text').val().trim();
@@ -291,11 +269,6 @@
       return;
     }
 
-    this.event.all_day = all_day;
-    if (all_day) {
-      begin = moment(this.event.begin);
-      end = moment(this.event.end);
-    }
     date.set('hour', begin.hours());
     date.set('minute', begin.minutes());
     this.event.begin = date.clone();
@@ -418,13 +391,9 @@
   jsonD2F = function(d, f) {
     f = f || {};
     f.id = d.id;
-    f.allDay = d.all_day;
+    f.allDay = false;
     f.start = moment(d.begin).toDate();
-    if (d.end != null) {
-      f.end = moment(d.end).toDate();
-    } else {
-      delete f.end;
-    }
+    f.end = moment(d.end).toDate();
     f.title = '' + d.issue;
     f.issueInfo = d.issue_info;
     f.readOnly = d.read_only;
@@ -436,7 +405,6 @@
       f.color = colorize(d.issue);
     }
     if (d === f) {
-      delete f.all_day;
       delete f.begin;
       delete f.issue;
       delete f.issue_info;
@@ -447,18 +415,12 @@
   jsonF2D = function(f, d) {
     d = d || {};
     d.id = f.id;
-    d.all_day = f.allDay;
     d.begin = moment(f.start).format_notz();
-    if (f.end != null) {
-      d.end = moment(f.end).format_notz();
-    } else {
-      delete d.end;
-    }
+    d.end = moment(f.end).format_notz();
     d.issue = parseInt(f.title);
     d.issue_info = f.issueInfo;
     d.read_only = f.readOnly;
     if (f === d) {
-      delete d.allDay;
       delete d.start;
       delete d.title;
       delete d.issueInfo;
@@ -480,6 +442,7 @@ $(document).ready(function() {
    */
   var calendar = $('#calendar');
   calendar.fullCalendar({
+    allDaySlot: false,
     header: {
       left: 'prev,next today',
       center: 'title',
@@ -563,14 +526,9 @@ $(document).ready(function() {
         event: {
           begin: start,
           end: end,
-          all_day: allDay,
         },
         onClickOk: function(event) {
           $('#dialog-alert').dialogAlert('status', 'Please wait...');
-
-          if (event.all_day) {
-            event.end = moment(event.begin).add('hours', 2).toDate();
-          }
 
           $.ajax({
             url: '/timesheet/events/create/',
@@ -579,7 +537,6 @@ $(document).ready(function() {
               issue: event.issue,
               begin: moment(event.begin).format_notz(),
               end: moment(event.end).format_notz(),
-              all_day: event.all_day,
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');
@@ -628,7 +585,6 @@ $(document).ready(function() {
           issue: parseInt(event.title),
           begin: event.start,
           end: event.end,
-          all_day: event.allDay,
         },
         onClickOk: function(event) {
           $('#dialog-alert').dialogAlert('status', 'Please wait...');
@@ -641,7 +597,6 @@ $(document).ready(function() {
               issue: event.issue,
               begin: moment(event.begin).format_notz(),
               end: event.end == null ? undefined : moment(event.end).format_notz(),
-              all_day: event.all_day,
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');
@@ -726,7 +681,6 @@ $(document).ready(function() {
           id: event['id'],
           day_delta: dayDelta,
           minute_delta: minuteDelta,
-          all_day: allDay,
         },
         success: function(data) {
           if (data.length != 1) {
@@ -836,50 +790,62 @@ $(document).ready(function() {
     },
     drop: function(date, allDay) { // this function is called when something is dropped
       // retrieve the dropped element's stored Event Object
+      var start = moment(date).toDate();
+      var end = moment(date).add('hours', 2).toDate();
       var issue = $(this).data('eventObject').title.replace( / .*$/g, '').replace( /[^\d]/g, '');
-      $.ajax({
-        url: '/timesheet/events/create/',
-        type: 'POST',
-        data: {
+      $('#dialog-issue').dialogIssue('open', {
+        event: {
           issue: issue,
-          begin: moment(date).format_notz(),
-          end: moment(date).add('hours', 2).format_notz(),
-          all_day: allDay,
+          begin: start,
+          end: end,
         },
-        success: function(data) {
-          $('#dialog-issue').dialogIssue('close');
-          ids = [];
-          for (var i = 0; i < data.length; i++) {
-            ids[0] = data[i].issue;
-            data[i] = jsonD2F(data[i]);
-            calendar.fullCalendar('renderEvent', data[i]);
-          }
-          $('#dialog-alert').dialogAlert('close');
-          var uniqIds = [];
-          $.each(ids, function(i, el) {
-            if ($.inArray(el, uniqIds) === -1) {
-              uniqIds.push(el);
-            }
-          });
+        onClickOk: function(event) {
+          $('#dialog-alert').dialogAlert('status', 'Please wait...');
+
           $.ajax({
-            url: '/timesheet/redmine/issues/read/',
+            url: '/timesheet/events/create/',
             type: 'POST',
             data: {
-              ids: uniqIds,
+              issue: event.issue,
+              begin: moment(event.begin).format_notz(),
+              end: moment(event.end).format_notz(),
             },
-            success: function(issueData) {
+            success: function(data) {
+              $('#dialog-issue').dialogIssue('close');
+              var ids = [];
               for (var i = 0; i < data.length; i++) {
-                var d = data[i];
-                d.issueInfo = issueData[ids[i]] || null;
-                jsonF2D(data[i], data[i]);
-                jsonD2F(data[i], data[i]);
+                ids[i] = data[i].issue;
+                data[i] = jsonD2F(data[i]);
+                calendar.fullCalendar('renderEvent', data[i]);
               }
-              calendar.fullCalendar('rerenderEvents');
+              $('#dialog-alert').dialogAlert('close');
+              var uniqIds = [];
+              $.each(ids, function(i, el) {
+                if ($.inArray(el, uniqIds) === -1) {
+                  uniqIds.push(el);
+                }
+              });
+              $.ajax({
+                url: '/timesheet/redmine/issues/read/',
+                type: 'POST',
+                data: {
+                  ids: uniqIds,
+                },
+                success: function(issueData) {
+                  for (var i = 0; i < data.length; i++) {
+                    var d = data[i];
+                    d.issueInfo = issueData[ids[i]] || null;
+                    jsonF2D(data[i], data[i]);
+                    jsonD2F(data[i], data[i]);
+                  }
+                  calendar.fullCalendar('rerenderEvents');
+                },
+              });
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+              $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
             },
           });
-        },
-        error: function(XMLHttpRequest, textStatus, errorThrown) {
-          $('#dialog-alert').dialogAlert('error', 'Failure while creating event!');
         },
       });
     },

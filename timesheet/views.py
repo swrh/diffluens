@@ -30,8 +30,14 @@ class RedmineIssuesCache:
 
     def get_redmine(self):
         if self._redmine is None:
-            redmine_url = Settings.objects.all()[0].redmine_url
-            redmine_api_key = UserSettings.objects.filter(user=self._user)[0].redmine_api_key
+            redmine_url = Settings.objects.all()
+            if redmine_url is None or len(redmine_url) <= 0:
+                raise PermissionDenied
+            redmine_url = redmine_url[0].redmine_url
+            redmine_api_key = UserSettings.objects.filter(user=self._user)
+            if redmine_api_key is None or len(redmine_api_key) <= 0:
+                raise PermissionDenied
+            redmine_api_key = redmine_api_key[0].redmine_api_key
             self._redmine = Redmine(redmine_url, key=redmine_api_key)
         return self._redmine
 
@@ -56,7 +62,10 @@ class RedmineIssuesCache:
                     'valid': False,
                 }
             self._issues[id_] = data
-            cache_expires = Settings.objects.all()[0].cache_expires
+            cache_expires = Settings.objects.all()
+            if cache_expires is None or len(cache_expires) <= 0:
+                raise PermissionDenied
+            cache_expires = cache_expires[0].cache_expires
             cache.set(self._cache_key, self._issues, cache_expires)
         return self._issues[id_]
 
@@ -91,9 +100,10 @@ def events_create(request):
     params = request.POST
     if params is None:
         raise PermissionDenied
-    begin = params.get('begin')
     issue = params.get('issue')
-    if begin is None or issue is None:
+    begin = params.get('begin')
+    end = params.get('end')
+    if issue is None or begin is None or end is None:
         raise PermissionDenied
 
     try:
@@ -102,37 +112,21 @@ def events_create(request):
         raise PermissionDenied
 
     begin = dateutil.parser.parse(begin).replace(tzinfo=None)
-
-    end = params.get('end')
-    if end is not None:
-        end = dateutil.parser.parse(end).replace(tzinfo=None)
-
-    all_day = params.get('all_day')
-    if all_day is None:
-        if end is not None:
-            all_day = False
-        else:
-            all_day = True
-    else:
-        all_day = all_day.lower() == 'true'
-
-    if not all_day and (end is None or begin > end):
+    end = dateutil.parser.parse(end).replace(tzinfo=None)
+    if begin > end:
         raise PermissionDenied
 
-    event = Event(issue=issue, begin=begin, end=end, all_day=all_day, user=request.user)
+    event = Event(issue=issue, begin=begin, end=end, user=request.user)
     event.save()
     output = []
     for ev in (event,):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
-        }
-        if ev.end is not None:
-            e['end'] = ev.end.isoformat()
-        if ev.all_day is not None:
-            e['all_day'] = ev.all_day
+            }
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -156,13 +150,10 @@ def events_read(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
         }
-        if ev.end is not None:
-            e['end'] = ev.end.isoformat()
-        if ev.all_day is not None:
-            e['all_day'] = ev.all_day
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -186,7 +177,7 @@ def events_update(request):
     issue = params.get('issue')
     if issue is not None:
         try:
-            issue = int(params['issue'])
+            issue = int(issue)
         except ValueError:
             raise PermissionDenied
 
@@ -198,9 +189,8 @@ def events_update(request):
     if end is not None:
         end = dateutil.parser.parse(end).replace(tzinfo=None)
 
-    all_day = params.get('all_day')
-    if all_day is not None:
-        all_day = all_day.lower() == 'true'
+    if begin is None and end is None:
+        raise PermissionDenied
 
     # Update (memory only) and validate events parameters.
     for ev in evs:
@@ -210,14 +200,14 @@ def events_update(request):
             ev.begin = begin
         if end is not None:
             ev.end = end
-        if all_day is not None:
-            ev.all_day = all_day
         # Validate event.
         if ev.issue is None:
             raise PermissionDenied
         if ev.begin is None:
             raise PermissionDenied
-        if not ev.all_day and ev.end is not None and ev.begin > ev.end:
+        if ev.end is None:
+            raise PermissionDenied
+        if ev.begin > ev.end:
             raise PermissionDenied
         if ev.read_only:
             raise PermissionDenied
@@ -229,13 +219,10 @@ def events_update(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
         }
-        if ev.end is not None:
-            e['end'] = ev.end.isoformat()
-        if ev.all_day is not None:
-            e['all_day'] = ev.all_day
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -279,7 +266,6 @@ def events_move(request):
     if len(evs) <= 0:
         raise PermissionDenied  # FIXME
 
-    all_day = params.get('all_day')
     day_delta = params.get('day_delta')
     minute_delta = params.get('minute_delta')
 
@@ -296,23 +282,20 @@ def events_move(request):
     except ValueError:
         raise PermissionDenied
 
-    if all_day is not None:
-        all_day = all_day.lower() == 'true'
-
     # Update (memory only) and validate events parameters.
     for ev in evs:
         if ev.begin is not None:
             ev.begin += delta
         if ev.end is not None:
             ev.end += delta
-        if all_day is not None:
-            ev.all_day = all_day
         # Validate event.
         if ev.issue is None:
             raise PermissionDenied
         if ev.begin is None:
             raise PermissionDenied
-        if not ev.all_day and ev.end is not None and ev.begin > ev.end:
+        if ev.end is None:
+            raise PermissionDenied
+        if ev.begin > ev.end:
             raise PermissionDenied
         if ev.read_only:
             raise PermissionDenied
@@ -324,13 +307,10 @@ def events_move(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
         }
-        if ev.end is not None:
-            e['end'] = ev.end.isoformat()
-        if ev.all_day is not None:
-            e['all_day'] = ev.all_day
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -381,7 +361,9 @@ def events_resize(request):
             raise PermissionDenied
         if ev.begin is None:
             raise PermissionDenied
-        if not ev.all_day and ev.end is not None and ev.begin > ev.end:
+        if ev.end is None:
+            raise PermissionDenied
+        if ev.begin > ev.end:
             raise PermissionDenied
         if ev.read_only:
             raise PermissionDenied
@@ -393,13 +375,10 @@ def events_resize(request):
         e = {
             'issue': ev.issue,
             'begin': ev.begin.isoformat(),
+            'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
         }
-        if ev.end is not None:
-            e['end'] = ev.end.isoformat()
-        if ev.all_day is not None:
-            e['all_day'] = ev.all_day
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
@@ -413,11 +392,20 @@ def redmine_issues_assigned(request):
     cache_key = 'redmine-issues-assigned-%u' % request.user.id
     assigned_issue_ids = cache.get(cache_key)
     if assigned_issue_ids is None:
-        redmine_url = Settings.objects.all()[0].redmine_url
-        redmine_api_key = UserSettings.objects.filter(user=request.user)[0].redmine_api_key
+        redmine_url = Settings.objects.all()
+        if redmine_url is None or len(redmine_url) <= 0:
+            raise PermissionDenied
+        redmine_url = redmine_url[0].redmine_url
+        redmine_api_key = UserSettings.objects.filter(user=request.user)
+        if redmine_api_key is None or len(redmine_api_key) <= 0:
+            raise PermissionDenied
+        redmine_api_key = redmine_api_key[0].redmine_api_key
         redmine = Redmine(redmine_url, key=redmine_api_key)
         assigned_issue_ids = [i.id for i in redmine.issues(assigned_to_id=redmine.user.id)]
-        cache_expires = Settings.objects.all()[0].cache_expires
+        cache_expires = Settings.objects.all()
+        if cache_expires is None or len(cache_expires) <= 0:
+            raise PermissionDenied
+        cache_expires = cache_expires[0].cache_expires
         cache.set(cache_key, assigned_issue_ids, cache_expires)
 
     issues_cache = RedmineIssuesCache(request.user)
@@ -470,7 +458,8 @@ def report(request):
                                             user=request.user)
         for evc in evs_conflict:
             errors.append('Event %d (#%d, %s-%s) conflicts with event %d (#%d, %s-%s)' % (
-                ev.id, ev.issue, ev.begin.isoformat(), ev.end.isoformat(), evc.id, evc.issue, evc.begin.isoformat(), evc.end.isoformat()))
+                ev.id, ev.issue, ev.begin.isoformat(), ev.end.isoformat(),
+                evc.id, evc.issue, evc.begin.isoformat(), evc.end.isoformat()))
         issue = issues_cache.get_issue(ev.issue)
         if not issue['valid']:
             errors.append('Event %d (%s-%s) points to invalid issue #%d' % (
