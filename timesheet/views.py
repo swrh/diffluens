@@ -126,7 +126,7 @@ def events_create(request):
             'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
-            }
+        }
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
 
