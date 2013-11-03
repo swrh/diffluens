@@ -177,8 +177,10 @@
         '</div>\n' +
         '<label class="label-block" for="issue">Issue</label>\n' +
         '<input id="issue" class="text ui-corner-all ui-widget-content input-block" type="text" autofocus />\n' +
+        '<label class="label-block" for="comments">Comments</label>\n' +
+        '<input id="comments" class="text ui-corner-all ui-widget-content input-block" type="text" />\n' +
         '</form>');
-    element.find('#issue').keypress(function (e) {
+    element.find('#issue, #comments').keypress(function (e) {
       if (e.keyCode == $.ui.keyCode.ENTER) {
         element.parent().find('.ui-dialog-buttonpane button:first').focus();
       }
@@ -222,10 +224,15 @@
     var begin = moment(this.event.begin);
     var end = moment(this.event.end);
 
+    if (this.event.comments == null) {
+      this.event.comments = '';
+    }
+
     this.element.find('#date').val(begin.format(this.options.dateFormat));
     this.element.find('#begin.text').val(begin.format(this.options.timeFormat));
     this.element.find('#end.text').val(end.format(this.options.timeFormat));
     this.element.find('#issue.text').val(this.event.issue);
+    this.element.find('#comments.text').val(this.event.comments.trim());
 
     this.element.dialog('open');
   };
@@ -265,6 +272,8 @@
       invalid = true;
     }
 
+    var comments = this.element.find('#comments.text').val().trim();
+
     if (invalid) {
       return;
     }
@@ -276,6 +285,7 @@
     date.set('minute', end.minutes());
     this.event.end = date.clone();
     this.event.issue = issue;
+    this.event.comments = comments;
 
     if (this.onClickOk != null) {
       this.onClickOk(this.event);
@@ -397,6 +407,11 @@
     f.title = '' + d.issue;
     f.issueInfo = d.issue_info;
     f.readOnly = d.read_only;
+    if (d.comments == null) {
+      f.comments = '';
+    } else {
+      f.comments = d.comments;
+    }
     if (f.readOnly) {
       f.color = colorize(0);
     } else if (f.issueInfo === null) {
@@ -420,6 +435,11 @@
     d.issue = parseInt(f.title);
     d.issue_info = f.issueInfo;
     d.read_only = f.readOnly;
+    if (f.comments == null) {
+      d.comments = '';
+    } else {
+      d.comments = f.comments;
+    }
     if (f === d) {
       delete d.start;
       delete d.title;
@@ -537,6 +557,7 @@ $(window).bind('load', function() {
               issue: event.issue,
               begin: moment(event.begin).format_notz(),
               end: moment(event.end).format_notz(),
+              comments: event.comments,
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');
@@ -585,6 +606,7 @@ $(window).bind('load', function() {
           issue: parseInt(event.title),
           begin: event.start,
           end: event.end,
+          comments: event.comments,
         },
         onClickOk: function(event) {
           $('#dialog-alert').dialogAlert('status', 'Please wait...');
@@ -597,6 +619,7 @@ $(window).bind('load', function() {
               issue: event.issue,
               begin: moment(event.begin).format_notz(),
               end: event.end == null ? undefined : moment(event.end).format_notz(),
+              comments: event.comments,
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');
@@ -784,6 +807,11 @@ $(window).bind('load', function() {
         if (event.issueInfo.subject) {
           subject += htmlize(event.issueInfo.subject);
         }
+        if (event.comments) {
+          subject += '<br />';
+          subject += '<br />';
+          subject += htmlize(event.comments);
+        }
         subject += '</div>';
         title.parent().append(subject);
       }
@@ -809,6 +837,7 @@ $(window).bind('load', function() {
               issue: event.issue,
               begin: moment(event.begin).format_notz(),
               end: moment(event.end).format_notz(),
+              comments: event.comments,
             },
             success: function(data) {
               $('#dialog-issue').dialogIssue('close');

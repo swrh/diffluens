@@ -106,6 +106,8 @@ def events_create(request):
     if issue is None or begin is None or end is None:
         raise PermissionDenied
 
+    comments = params.get('comments')
+
     try:
         issue = int(issue)
     except ValueError:
@@ -116,7 +118,7 @@ def events_create(request):
     if begin > end:
         raise PermissionDenied
 
-    event = Event(issue=issue, begin=begin, end=end, user=request.user)
+    event = Event(issue=issue, begin=begin, end=end, user=request.user, comments=comments.strip())
     event.save()
     output = []
     for ev in (event,):
@@ -126,6 +128,7 @@ def events_create(request):
             'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
+            'comments': ev.comments,
         }
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
@@ -153,6 +156,7 @@ def events_read(request):
             'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
+            'comments': ev.comments,
         }
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
@@ -192,6 +196,8 @@ def events_update(request):
     if begin is None and end is None:
         raise PermissionDenied
 
+    comments = params.get('comments')
+
     # Update (memory only) and validate events parameters.
     for ev in evs:
         if issue is not None:
@@ -200,6 +206,8 @@ def events_update(request):
             ev.begin = begin
         if end is not None:
             ev.end = end
+        if comments is not None:
+            ev.comments = comments.strip()
         # Validate event.
         if ev.issue is None:
             raise PermissionDenied
@@ -222,6 +230,7 @@ def events_update(request):
             'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
+            'comments': ev.comments,
         }
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
@@ -378,6 +387,7 @@ def events_resize(request):
             'end': ev.end.isoformat(),
             'id': ev.id,
             'read_only': ev.read_only,
+            'comments': ev.comments,
         }
         output.append(e)
     return HttpResponse(json.dumps(output), content_type="application/json")
@@ -476,10 +486,15 @@ def report(request):
     output = []
     for ev in evs:
         issue = issues_cache.get_issue(ev.issue)
-        if issue['valid']:
-            description = '%s (#%d)' % (unicodedata.normalize('NFKD', issue['subject']).encode('ascii', 'ignore'), ev.issue)
-        else:
-            description = '#%d' % ev.issue
+        description = ''
+        if ev.comments is not None:
+            description = ev.comments.strip()
+        if len(description) <= 0 and issue['valid']:
+            description = issue['subject']
+        if len(description) > 0:
+            description += ' '
+        description += '(#%d)' % ev.issue
+        description = '%s' % unicodedata.normalize('NFKD', description).encode('ascii', 'ignore')
         output.append(' %-15s %-15s %-15s %-15s %-15s %-30s %s' % (
             ev.begin.strftime('%Y%m%d'),
             ev.begin.strftime('%H:%M:%S'),

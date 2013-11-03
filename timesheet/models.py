@@ -19,6 +19,7 @@ class Event(models.Model):
     end = models.DateTimeField(null=True, blank=True)
     user = models.ForeignKey(User)
     read_only = models.BooleanField(default=False)
+    comments = models.CharField(max_length=128, null=True, blank=True)
 
 # vi:set sw=4 ts=4:
 # vim:set et:
